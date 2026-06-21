@@ -13,7 +13,13 @@ import {
   Info,
   Sparkles,
   Sliders,
-  Paintbrush
+  Paintbrush,
+  Coffee,
+  Heart,
+  ExternalLink,
+  Mail,
+  Briefcase,
+  Send
 } from 'lucide-react';
 import { PackagingSpecs, INITIAL_SPECS, PackagingType } from './types';
 import { PackagingDielineSVG } from './components/PackagingDielineSVG';
@@ -41,6 +47,21 @@ export default function App() {
 
   // Manual dimension override state (false = auto calculations locked to the 0.5L cans, true = manually adjustable cm)
   const [isOverrideEnabled, setIsOverrideEnabled] = useState(false);
+
+  // Buy Me a Coffee customization state
+  const [bmcUsername, setBmcUsername] = useState(() => {
+    return localStorage.getItem('packcraft_bmc_user') || 'juliiyabrodska';
+  });
+  const [showBmcConfig, setShowBmcConfig] = useState(false);
+
+  // Business and custom orders customization state
+  const [contactEmail, setContactEmail] = useState(() => {
+    return localStorage.getItem('packcraft_contact_email') || 'juliiyabrodska@gmail.com';
+  });
+  const [socialLink, setSocialLink] = useState(() => {
+    return localStorage.getItem('packcraft_social_link') || 'https://www.linkedin.com/in/juliiyabrodska';
+  });
+  const [showContactConfig, setShowContactConfig] = useState(false);
 
   // Status message for auto-saves
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
@@ -891,11 +912,143 @@ export default function App() {
               {/* Danger Reset */}
               <button
                 onClick={handleReset}
-                className="w-full text-[10px] text-zinc-600 hover:text-coke-red font-mono py-1 flex items-center justify-center space-x-1 transition-all cursor-pointer bg-transparent border-0"
+                className="w-full text-[10px] text-zinc-600 hover:text-coke-red font-mono py-1.5 flex items-center justify-center space-x-1 transition-all cursor-pointer bg-transparent border-0"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset to standard 0.5L factory specifications</span>
               </button>
+
+              {/* BUY ME A COFFEE WIDGET */}
+              <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#1a1a1f] rounded-lg border border-yellow-500/20 space-y-3 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-yellow-500 font-bold text-xs uppercase tracking-wider font-mono">
+                    <Coffee className="w-4 h-4 text-yellow-500 animate-pulse shrink-0" />
+                    <span>ПІДТРИМАТИ ПРОЄКТ</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowBmcConfig(!showBmcConfig)}
+                    className="text-[9px] font-mono text-zinc-500 hover:text-yellow-400 underline transition-colors cursor-pointer bg-transparent border-0"
+                    title="Змінити налаштування посилання"
+                  >
+                    {showBmcConfig ? 'СХОВАТИ НАЛАШТУВАННЯ' : 'ЗМІНИТИ USERNAME'}
+                  </button>
+                </div>
+
+                {showBmcConfig && (
+                  <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-1.5 transition-all">
+                    <label className="text-[9px] text-zinc-400 font-mono uppercase block">Username або посилання на Buy Me a Coffee:</label>
+                    <input 
+                      type="text" 
+                      value={bmcUsername}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBmcUsername(val);
+                        localStorage.setItem('packcraft_bmc_user', val);
+                      }}
+                      placeholder="juliiyabrodska"
+                      className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-yellow-500 focus:outline-none"
+                    />
+                    <p className="text-[8px] text-zinc-500 font-mono leading-none pt-0.5">
+                      Буде згенеровано лінк: <span className="text-yellow-600/90 break-all">buymeacoffee.com/{bmcUsername || 'your_username'}</span>
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
+                  Вам подобається 3D-студія? Ви можете підтримати розробку, пригостивши розробника горнятком кави! ☕✨
+                </p>
+
+                <a
+                  href={bmcUsername.startsWith('http') ? bmcUsername : `https://www.buymeacoffee.com/${bmcUsername || 'juliiyabrodska'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#FFDD00] hover:bg-[#ffea45] text-black hover:scale-[1.01] active:scale-[0.99] font-bold text-xs font-mono py-2.5 px-4 rounded flex items-center justify-center space-x-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(255,221,0,0.15)] select-none focus:ring-1 focus:ring-yellow-400"
+                  id="btn-buy-me-coffee"
+                >
+                  <span className="text-sm">☕</span>
+                  <span className="font-extrabold uppercase">BUY ME A COFFEE</span>
+                  <ExternalLink className="w-3 h-3 shrink-0 stroke-[2.5px]" />
+                </a>
+              </div>
+
+              {/* BUSINESS & CUSTOM MODEL INQUIRY WIDGET */}
+              <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#121620] rounded-lg border border-indigo-500/20 space-y-3 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider font-mono">
+                    <Briefcase className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span>БІЗНЕС ТА ЗАМОВЛЕННЯ</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowContactConfig(!showContactConfig)}
+                    className="text-[9px] font-mono text-zinc-500 hover:text-indigo-400 underline transition-colors cursor-pointer bg-transparent border-0"
+                    title="Налаштувати контакти"
+                  >
+                    {showContactConfig ? 'СХОВАТИ' : 'НАЛАШТУВАТИ КНОПКИ'}
+                  </button>
+                </div>
+
+                {showContactConfig && (
+                  <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-3 transition-all">
+                    <div>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Email для замовлень:</label>
+                      <input 
+                        type="text" 
+                        value={contactEmail}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setContactEmail(val);
+                          localStorage.setItem('packcraft_contact_email', val);
+                        }}
+                        placeholder="your-email@gmail.com"
+                        className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Посилання (LinkedIn / Telegram / Website):</label>
+                      <input 
+                        type="text" 
+                        value={socialLink}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSocialLink(val);
+                          localStorage.setItem('packcraft_social_link', val);
+                        }}
+                        placeholder="https://www.linkedin.com/..."
+                        className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                    <p className="text-[8px] text-zinc-500 font-mono leading-tight">
+                      Зміни зберігаються локально. Посилання будуть вести на ваші канали зв'язку.
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
+                  Бажаєте унікальну 3D-модель бляшанки чи коробки, адаптацію розмірів або інтеграцію інтерактивного CAD-віджету у ваш сайт?
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <a
+                    href={`mailto:${contactEmail || 'juliiyabrodska@gmail.com'}?subject=${encodeURIComponent('Замовлення індивідуального 3D-пакування')}&body=${encodeURIComponent('Вітаю! Зацікавила розробка індивідуального 3D-макету або інтерактивного рішення пакування. Ось мої побажання: ')}`}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] font-mono py-2.5 px-2 rounded flex items-center justify-center space-x-1.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-indigo-600/10"
+                    id="btn-order-custom-model"
+                  >
+                    <Mail className="w-3.5 h-3.5 shrink-0" />
+                    <span className="uppercase text-center">ЗАМОВИТИ МОДЕЛЬ</span>
+                  </a>
+
+                  <a
+                    href={socialLink || 'https://www.linkedin.com/in/juliiyabrodska'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold text-[10px] font-mono py-2.5 px-2 rounded flex items-center justify-center space-x-1.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99]"
+                    id="btn-business-contact"
+                  >
+                    <Send className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                    <span className="uppercase text-center">ЗВ'ЯЗОК ДЛЯ БІЗНЕСУ</span>
+                  </a>
+                </div>
+              </div>
 
             </div>
 
