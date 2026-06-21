@@ -1029,7 +1029,7 @@ export default function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <a
-                    href={`mailto:${contactEmail || 'juliiyabrodska@gmail.com'}?subject=${encodeURIComponent('Замовлення індивідуального 3D-пакування')}&body=${encodeURIComponent('Вітаю! Зацікавила розробка індивідуального 3D-макету або інтерактивного рішення пакування. Ось мої побажання: ')}`}
+                    href={`mailto:${contactEmail || 'juliiyabrodska@gmail.com'}?subject=${encodeURIComponent('Custom 3D Packaging Order')}&body=${encodeURIComponent('Hello! I am interested in custom 3D packaging layout or interactive packaging solutions. Here are my requirements: ')}`}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] font-mono py-2.5 px-2 rounded flex items-center justify-center space-x-1.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-indigo-600/10"
                     id="btn-order-custom-model"
                   >
