@@ -955,7 +955,7 @@ export default function App() {
                 )}
 
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
-                  Вам подобається 3D-студія? Ви можете підтримати розробку, пригостивши розробника горнятком кави! ☕✨
+                  Цей інструмент — один із прикладів швидкого прототипування та впровадження сучасних AI-технологій. Ви можете підтримати мої майбутні розробки, пригостивши мене кавою! ☕✨
                 </p>
 
                 <a
@@ -976,7 +976,7 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider font-mono">
                     <Briefcase className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>БІЗНЕС ТА ЗАМОВЛЕННЯ</span>
+                    <span>БІЗНЕС ТА АВТОМАТИЗАЦІЯ</span>
                   </div>
                   <button 
                     onClick={() => setShowContactConfig(!showContactConfig)}
@@ -990,7 +990,7 @@ export default function App() {
                 {showContactConfig && (
                   <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-3 transition-all">
                     <div>
-                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Email для замовлень:</label>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Email для запитів:</label>
                       <input 
                         type="text" 
                         value={contactEmail}
@@ -1004,7 +1004,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Посилання (LinkedIn / Telegram / Website):</label>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Посилання (LinkedIn / Upwork / Website):</label>
                       <input 
                         type="text" 
                         value={socialLink}
@@ -1024,17 +1024,17 @@ export default function App() {
                 )}
 
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
-                  Бажаєте унікальну 3D-модель бляшанки чи коробки, адаптацію розмірів або інтеграцію інтерактивного CAD-віджету у ваш сайт?
+                  Шукаєте експерта для масштабування бізнесу, оптимізації процесів за Lean-методологією, налаштування n8n/Make автоматизацій чи впровадження VAPI і AI-інструментів?
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <a
-                    href={`mailto:${contactEmail || 'juliiyabrodska@gmail.com'}?subject=${encodeURIComponent('Custom 3D Packaging Order')}&body=${encodeURIComponent('Hello! I am interested in custom 3D packaging layout or interactive packaging solutions. Here are my requirements: ')}`}
+                    href={`mailto:${contactEmail || 'juliiyabrodska@gmail.com'}?subject=${encodeURIComponent('Business Process Automation & AI Consultation Inquiry')}&body=${encodeURIComponent('Вітаю Юліє! Зацікавила автоматизація бізнес-процесів за допомогою Lean та інтеграції сучасних AI-інструментів (n8n, Make, VAPI). Наші завдання: ')}`}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] font-mono py-2.5 px-2 rounded flex items-center justify-center space-x-1.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-indigo-600/10"
                     id="btn-order-custom-model"
                   >
                     <Mail className="w-3.5 h-3.5 shrink-0" />
-                    <span className="uppercase text-center">ЗАМОВИТИ МОДЕЛЬ</span>
+                    <span className="uppercase text-center">ЗАМОВИТИ АВТОМАТИЗАЦІЮ</span>
                   </a>
 
                   <a
@@ -1045,7 +1045,7 @@ export default function App() {
                     id="btn-business-contact"
                   >
                     <Send className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-                    <span className="uppercase text-center">ЗВ'ЯЗОК ДЛЯ БІЗНЕСУ</span>
+                    <span className="uppercase text-center text-[9px]">ЗВ'ЯЗОК В LINKEDIN</span>
                   </a>
                 </div>
               </div>
