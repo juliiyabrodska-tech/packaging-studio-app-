@@ -1,0 +1,6 @@
+{
+  "name": "PackCraft 3D",
+  "description": "Professional 3D parametric CAD dieline designer and visual specification suite for aluminum can packaging bundles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
