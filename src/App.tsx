@@ -30,7 +30,9 @@ export default function App() {
   // Helper to migrate legacy Ukrainian state cached in user's localStorage to English
   const migrateUkrainianToEnglish = (data: PackagingSpecs): PackagingSpecs => {
     const flavorMap: { [key: string]: string } = {
-      'Вишня-Кола Класик': 'Cherry-Cola Classic',
+      // Ukrainian keys
+      'Вишня-Кола Класик': 'Cherry Berry Classic',
+      'Вишня-Шипучка Класик': 'Cherry Berry Classic',
       'Шалений Лайм-М\'ята': 'Mad Lime-Mint',
       'Шалений Лайм-М’ята': 'Mad Lime-Mint',
       'Лісові Ягоди Зеро': 'Forest Berries Zero',
@@ -39,21 +41,36 @@ export default function App() {
       'Яблучний Сайдкруш': 'Apple Sidecrush',
       'Апельсинова Шипучка': 'Orange Fizz',
       'Класичний Квасний Ель': 'Classic Kvass Ale',
-      'Кава-Кола Бустер': 'Coffee-Cola Booster',
+      'Кава-Кола Бустер': 'Coffee-Fizz Booster',
+      'Кавовий Бум Бустер': 'Coffee-Fizz Booster',
       'Кавуновий Бум': 'Watermelon Boom',
       'Ананасовий Сплеск': 'Pineapple Splash',
-      'Імбирна Кола Крісп': 'Ginger Cola Crisp',
+      'Імбирна Кола Крісп': 'Ginger Fizz Crisp',
+      'Імбирний Крісп': 'Ginger Fizz Crisp',
+      
+      // Legacy trademarked English keys
+      'Cherry-Cola Classic': 'Cherry Berry Classic',
+      'Cherry-Fizz Classic': 'Cherry Berry Classic',
+      'Coffee-Cola Booster': 'Coffee-Fizz Booster',
+      'Ginger Cola Crisp': 'Ginger Fizz Crisp',
     };
 
     const notesMap: { [key: string]: string } = {
       'Преміальний набір з софт-тач покриттям і тисненням під літній фестиваль.': 'Premium set with soft-touch coating and embossing for the summer festival.',
       'Преміальний набір з софт-тач покриттям і тисненням під літній фестиваль': 'Premium set with soft-touch coating and embossing for the summer festival.',
-      'Експериментальна партія під літній фестиваль. Червоно-чорна гама Coca-Cola, матове покриття картонного утримувача.': 'Experimental batch for summer festival. Red-black Coca-Cola palette, matte coat on cardboard carrier.',
-      'Експериментальна партія під літній фестиваль. Червоно-чорна гама Coca-Cola, матове покриття картонного утримувача': 'Experimental batch for summer festival. Red-black Coca-Cola palette, matte coat on cardboard carrier.',
+      'Експериментальна партія під літній фестиваль. Червоно-чорна гама Coca-Cola, матове покриття картонного утримувача.': 'Experimental batch for summer festival. Red-black premium palette, matte coat on cardboard carrier.',
+      'Експериментальна партія під літній фестиваль. Червоно-чорна гама Coca-Cola, матове покриття картонного утримувача': 'Experimental batch for summer festival. Red-black premium palette, matte coat on cardboard carrier.',
+      'Експериментальна партія під літній фестиваль. Червоно-чорна преміальна гама, матове покриття картонного утримувача.': 'Experimental batch for summer festival. Red-black premium palette, matte coat on cardboard carrier.',
       'Екологічна серія без покриття пластиком на суровому крафті.': 'Eco series without plastic coating, on raw unbleached Kraft board.',
       'Екологічна серія без покриття пластиком на суровому крафті': 'Eco series without plastic coating, on raw unbleached Kraft board.',
       'Легка промо-упаковка стяжка (бандаж) для першого знайомства в супермаркетах.': 'Lightweight promo sleeve wrap for store introductions.',
       'Легка промо-упаковка стяжка (бандаж) для першого знайомства в супермаркетах': 'Lightweight promo sleeve wrap for store introductions.',
+      
+      // Legacy English notes containing trademarked names
+      'Experimental batch for summer festival. Red-black Coca-Cola palette, matte coat on cardboard carrier.': 'Experimental batch for summer festival. Red-black premium palette, matte coat on cardboard carrier.',
+      'Experimental batch for summer festival. Red-black Coca-Cola palette, matte coat on cardboard carrier': 'Experimental batch for summer festival. Red-black premium palette, matte coat on cardboard carrier.',
+      'Experimental promo assortments for the summer festival. Custom red-black Coca-Cola palette, premium matte board lamination.': 'Experimental promo assortments for the summer festival. Custom red-black premium palette, premium matte board lamination.',
+      'Experimental promo assortments for the summer festival. Custom red-black Coca-Cola palette, premium matte board lamination': 'Experimental promo assortments for the summer festival. Custom red-black premium palette, premium matte board lamination.',
     };
 
     return {
@@ -142,8 +159,8 @@ export default function App() {
   };
 
   // Preset selectors for quick reset/selection
-  const applyPreset = (style: 'premium_cola' | 'kraft_eco' | 'sleeper_pack') => {
-    if (style === 'premium_cola') {
+  const applyPreset = (style: 'premium_gloss' | 'kraft_eco' | 'sleeper_pack') => {
+    if (style === 'premium_gloss') {
       setSpecs({
         ...specs,
         packagingType: 'closed_box_2x2',
@@ -153,7 +170,7 @@ export default function App() {
         printingMethod: 'offset',
         colorsCount: 6,
         coatingOption: 'soft_touch',
-        flavor1: 'Cherry-Cola Classic',
+        flavor1: 'Cherry Berry Classic',
         flavor2: 'Crazy Lime-Mint',
         flavor3: 'Forest Berries Zero',
         flavor4: 'Caribbean Spicy Orange',
@@ -193,10 +210,10 @@ export default function App() {
         printingMethod: 'digital',
         colorsCount: 4,
         coatingOption: 'matte',
-        flavor1: 'Coffee-Cola Booster',
+        flavor1: 'Coffee-Fizz Booster',
         flavor2: 'Watermelon Boom',
         flavor3: 'Pineapple Splash',
-        flavor4: 'Ginger Cola Crisp',
+        flavor4: 'Ginger Fizz Crisp',
         reinforcedBottom: false,
         fingerHoles: true,
         flavorDividers: false,
@@ -297,7 +314,7 @@ export default function App() {
     }));
   };
 
-  const isPremiumColaActive = specs.packagingType === 'closed_box_2x2' && specs.outerMaterial === 'solid_sulfate';
+  const isPremiumGlossActive = specs.packagingType === 'closed_box_2x2' && specs.outerMaterial === 'solid_sulfate';
   const isKraftEcoActive = specs.packagingType === 'basket_handle' && specs.outerMaterial === 'pure_kraft';
   const isSleeveActive = specs.packagingType === 'sleeve_pack' && specs.outerMaterial === 'recyclable_gd2';
 
@@ -334,15 +351,15 @@ export default function App() {
           {/* Quick presets layout button widget */}
           <div className="flex flex-row items-center gap-2 bg-coke-dark/90 p-1.5 rounded-lg border border-coke-border/80 w-full sm:w-auto justify-between sm:justify-start">
             <button 
-              onClick={() => applyPreset('premium_cola')}
+              onClick={() => applyPreset('premium_gloss')}
               className={`text-[10px] md:text-xs font-mono px-3.5 py-1.5 rounded-md transition-all cursor-pointer font-bold uppercase tracking-wider ${
-                isPremiumColaActive 
+                isPremiumGlossActive 
                   ? 'bg-coke-red text-white border border-red-500 shadow-md font-extrabold focus:ring-1 focus:ring-red-400' 
                   : 'bg-zinc-900/80 text-coke-gray hover:text-white border border-coke-border hover:bg-zinc-850'
               }`}
-              title="Premium 100% Soft-Touch 2x2 Coca-Cola style"
+              title="Premium 100% Soft-Touch 2x2 style"
             >
-              COKE PREMIUM
+              PREMIUM GLOSS
             </button>
             <button 
               onClick={() => applyPreset('kraft_eco')}

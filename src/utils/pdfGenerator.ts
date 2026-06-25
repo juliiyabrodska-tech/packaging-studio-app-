@@ -19,7 +19,8 @@ const cleanCyrillic = (text: string): string => {
     'ТАК / ЗАТВЕРДЖЕНО': 'YES / APPROVED',
 
     // Flavors
-    'Вишня-Кола Класик': 'Cherry-Cola Classic',
+    'Вишня-Кола Класик': 'Cherry Berry Classic',
+    'Вишня-Шипучка Класик': 'Cherry Berry Classic',
     'Шалений Лайм-М\'ята': 'Crazy Lime-Mint',
     'Лісові Ягоди Зеро': 'Forest Berries Zero',
     'Карибський Пряний Апельсин': 'Caribbean Spicy Orange',
@@ -27,14 +28,18 @@ const cleanCyrillic = (text: string): string => {
     'Яблучний Сайдкруш': 'Apple Sidecrush',
     'Апельсинова Шипучка': 'Orange Fizz',
     'Класичний Квасний Ель': 'Classic Kvass Ale',
-    'Кава-Кола Бустер': 'Coffee-Cola Booster',
+    'Кава-Кола Бустер': 'Coffee-Fizz Booster',
+    'Кавовий Бум Бустер': 'Coffee-Fizz Booster',
     'Кавуновий Бум': 'Watermelon Boom',
     'Ананасовий Сплеск': 'Pineapple Splash',
-    'Імбирна Кола Крісп': 'Ginger Cola Crisp',
+    'Імбирна Кола Крісп': 'Ginger Fizz Crisp',
+    'Імбирний Крісп': 'Ginger Fizz Crisp',
     
     // Notes & Presets descriptions
     'Експериментальна партія під літній фестиваль. Червоно-чорна гама Coca-Cola, матове покриття картонного утримувача.': 
-      'Experimental batch for summer festival. Red-black Coca-Cola palette, matte coat on cardboard carrier.',
+      'Experimental batch for summer festival. Red-black premium palette, matte coat on cardboard carrier.',
+    'Експериментальна партія під літній фестиваль. Червоно-чорна преміальна гама, матове покриття картонного утримувача.': 
+      'Experimental batch for summer festival. Red-black premium palette, matte coat on cardboard carrier.',
     'Преміальний набір з софт-тач покриттям і тисненням під літній фестиваль.': 
       'Premium set with soft-touch coating and embossing for the summer festival.',
     'Екологічна серія без покриття пластиком на суровому крафті.': 
@@ -125,7 +130,7 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     format: 'a4',
   });
 
-  const primaryRed = [230, 28, 36]; // Coca-Cola Red
+  const primaryRed = [230, 28, 36]; // Brand Red Accent
   const darkGray = [28, 28, 30];
   const borderGray = [180, 180, 180];
 
@@ -164,7 +169,7 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.setFillColor(28, 28, 30);
   doc.rect(12, 12, 186, 16, 'F');
   
-  // Coke Red accent bar on the left of the header
+  // Brand Red accent bar on the left of the header
   doc.setFillColor(230, 28, 36);
   doc.rect(12, 12, 3, 16, 'F');
 
@@ -176,7 +181,7 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.setFontSize(7.5);
   doc.setFont('Helvetica', 'normal');
   doc.setTextColor(210, 210, 210);
-  doc.text('SYSTEM GENERATED CAD REPORT V0.5 | COCA-COLA STYLE ASSORTMENT', 18, 24.5);
+  doc.text('SYSTEM GENERATED CAD REPORT V0.5 | PREMIUM STYLE ASSORTMENT', 18, 24.5);
 
   // Job ID / Info Block
   doc.setFont('Helvetica', 'normal');
@@ -327,7 +332,7 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
 
   const flavorData = [
     ['Can ID', 'Assortment Flavor Name', 'Tag Label Color Accent'],
-    ['Canister A', cleanCyrillic(flavor1) || 'Flavor A Class', 'Coke Red Accent (Dark Red)'],
+    ['Canister A', cleanCyrillic(flavor1) || 'Flavor A Class', 'Brand Red Accent (Dark Red)'],
     ['Canister B', cleanCyrillic(flavor2) || 'Flavor B Bold', 'Electric Lime Tonic (Green)'],
     ['Canister C', cleanCyrillic(flavor3) || 'Flavor C Zero', 'Cosmos Berry Purple (Violet)'],
     ['Canister D', cleanCyrillic(flavor4) || 'Flavor D Tonic', 'Rich Amber Orange (Gold)'],
@@ -339,7 +344,7 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     const bgY = tableY + rowIndex * 5.5;
     
     if (isHeader) {
-      doc.setFillColor(84, 14, 17); // Dark Coke red
+      doc.setFillColor(84, 14, 17); // Dark premium red
       doc.rect(12, bgY, 186, 5.5, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('Helvetica', 'bold');

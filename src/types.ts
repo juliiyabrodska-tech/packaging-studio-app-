@@ -53,7 +53,7 @@ export const INITIAL_SPECS: PackagingSpecs = {
   coatingOption: 'matte',
   
   // Varieties (4 flavors)
-  flavor1: 'Cherry-Cola Classic',
+  flavor1: 'Cherry Berry Classic',
   flavor2: 'Mad Lime-Mint',
   flavor3: 'Forest Berries Zero',
   flavor4: 'Caribbean Spicy Orange',
@@ -68,5 +68,5 @@ export const INITIAL_SPECS: PackagingSpecs = {
   approvedSerhiy: false,
   approvedMaryna: false,
   
-  notes: 'Experimental promo assortments for the summer festival. Custom red-black Coca-Cola palette, premium matte board lamination.'
+  notes: 'Experimental promo assortments for the summer festival. Custom red-black premium palette, premium matte board lamination.'
 };
