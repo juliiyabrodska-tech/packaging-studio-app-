@@ -27,6 +27,45 @@ import { CansAssortmentPreview } from './components/CansAssortmentPreview';
 import { generateSpecsPDFChecklist, exportSpecsToCSV } from './utils/pdfGenerator';
 
 export default function App() {
+  // Helper to migrate legacy Ukrainian state cached in user's localStorage to English
+  const migrateUkrainianToEnglish = (data: PackagingSpecs): PackagingSpecs => {
+    const flavorMap: { [key: string]: string } = {
+      'Вишня-Кола Класик': 'Cherry-Cola Classic',
+      'Шалений Лайм-М\'ята': 'Mad Lime-Mint',
+      'Шалений Лайм-М’ята': 'Mad Lime-Mint',
+      'Лісові Ягоди Зеро': 'Forest Berries Zero',
+      'Карибський Пряний Апельсин': 'Caribbean Spicy Orange',
+      'Дика Малина Без Цукру': 'Wild Raspberry Sugar Free',
+      'Яблучний Сайдкруш': 'Apple Sidecrush',
+      'Апельсинова Шипучка': 'Orange Fizz',
+      'Класичний Квасний Ель': 'Classic Kvass Ale',
+      'Кава-Кола Бустер': 'Coffee-Cola Booster',
+      'Кавуновий Бум': 'Watermelon Boom',
+      'Ананасовий Сплеск': 'Pineapple Splash',
+      'Імбирна Кола Крісп': 'Ginger Cola Crisp',
+    };
+
+    const notesMap: { [key: string]: string } = {
+      'Преміальний набір з софт-тач покриттям і тисненням під літній фестиваль.': 'Premium set with soft-touch coating and embossing for the summer festival.',
+      'Преміальний набір з софт-тач покриттям і тисненням під літній фестиваль': 'Premium set with soft-touch coating and embossing for the summer festival.',
+      'Експериментальна партія під літній фестиваль. Червоно-чорна гама Coca-Cola, матове покриття картонного утримувача.': 'Experimental batch for summer festival. Red-black Coca-Cola palette, matte coat on cardboard carrier.',
+      'Експериментальна партія під літній фестиваль. Червоно-чорна гама Coca-Cola, матове покриття картонного утримувача': 'Experimental batch for summer festival. Red-black Coca-Cola palette, matte coat on cardboard carrier.',
+      'Екологічна серія без покриття пластиком на суровому крафті.': 'Eco series without plastic coating, on raw unbleached Kraft board.',
+      'Екологічна серія без покриття пластиком на суровому крафті': 'Eco series without plastic coating, on raw unbleached Kraft board.',
+      'Легка промо-упаковка стяжка (бандаж) для першого знайомства в супермаркетах.': 'Lightweight promo sleeve wrap for store introductions.',
+      'Легка промо-упаковка стяжка (бандаж) для першого знайомства в супермаркетах': 'Lightweight promo sleeve wrap for store introductions.',
+    };
+
+    return {
+      ...data,
+      flavor1: flavorMap[data.flavor1.trim()] || data.flavor1,
+      flavor2: flavorMap[data.flavor2.trim()] || data.flavor2,
+      flavor3: flavorMap[data.flavor3.trim()] || data.flavor3,
+      flavor4: flavorMap[data.flavor4.trim()] || data.flavor4,
+      notes: notesMap[data.notes.trim()] || data.notes,
+    };
+  };
+
   // 1. Initialize specifications state with auto-save to localStorage
   const [specs, setSpecs] = useState<PackagingSpecs>(() => {
     try {
@@ -34,7 +73,8 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         // Fallback for any missing properties in updated revisions
-        return { ...INITIAL_SPECS, ...parsed };
+        const loaded = { ...INITIAL_SPECS, ...parsed };
+        return migrateUkrainianToEnglish(loaded);
       }
     } catch (e) {
       console.warn("Could not load from localStorage, initializing fresh specs.", e);
@@ -50,7 +90,7 @@ export default function App() {
 
   // Buy Me a Coffee customization state
   const [bmcUsername, setBmcUsername] = useState(() => {
-    return localStorage.getItem('packcraft_bmc_user') || 'juliiyabrodska';
+    return localStorage.getItem('packcraft_bmc_user') || 'https://send.monobank.ua/jar/9ZkTL7u4xR';
   });
   const [showBmcConfig, setShowBmcConfig] = useState(false);
 
@@ -923,20 +963,20 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 text-yellow-500 font-bold text-xs uppercase tracking-wider font-mono">
                     <Coffee className="w-4 h-4 text-yellow-500 animate-pulse shrink-0" />
-                    <span>ПІДТРИМАТИ ПРОЄКТ</span>
+                    <span>SUPPORT THE PROJECT</span>
                   </div>
                   <button 
                     onClick={() => setShowBmcConfig(!showBmcConfig)}
                     className="text-[9px] font-mono text-zinc-500 hover:text-yellow-400 underline transition-colors cursor-pointer bg-transparent border-0"
-                    title="Змінити налаштування посилання"
+                    title="Change donation link configuration"
                   >
-                    {showBmcConfig ? 'СХОВАТИ НАЛАШТУВАННЯ' : 'ЗМІНИТИ USERNAME'}
+                    {showBmcConfig ? 'HIDE SETTINGS' : 'CONFIGURE LINK'}
                   </button>
                 </div>
 
                 {showBmcConfig && (
                   <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-1.5 transition-all">
-                    <label className="text-[9px] text-zinc-400 font-mono uppercase block">Username або посилання на Buy Me a Coffee:</label>
+                    <label className="text-[9px] text-zinc-400 font-mono uppercase block">Monobank (Base/Jar), Diaka, or Buy Me a Coffee Link:</label>
                     <input 
                       type="text" 
                       value={bmcUsername}
@@ -945,30 +985,57 @@ export default function App() {
                         setBmcUsername(val);
                         localStorage.setItem('packcraft_bmc_user', val);
                       }}
-                      placeholder="juliiyabrodska"
+                      placeholder="https://send.monobank.ua/jar/..."
                       className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-yellow-500 focus:outline-none"
                     />
-                    <p className="text-[8px] text-zinc-500 font-mono leading-none pt-0.5">
-                      Буде згенеровано лінк: <span className="text-yellow-600/90 break-all">buymeacoffee.com/{bmcUsername || 'your_username'}</span>
+                    <p className="text-[8px] text-zinc-500 font-mono leading-normal pt-1">
+                      Supports direct URLs: <span className="text-yellow-600/90 break-all">base.monobank.ua/...</span>, <span className="text-yellow-600/90 break-all">send.monobank.ua/...</span>, <span className="text-yellow-600/90 break-all">diaka.ua/...</span> or simply a Buy Me a Coffee Username.
                     </p>
                   </div>
                 )}
 
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
-                  Цей інструмент — один із прикладів швидкого прототипування та впровадження сучасних AI-технологій. Ви можете підтримати мої майбутні розробки, пригостивши мене кавою! ☕✨
+                  This tool represents an example of rapid prototyping and deployment of modern AI technologies. You can support my future developments by buying me a coffee or sending a donation! ☕✨
                 </p>
 
                 <a
-                  href={bmcUsername.startsWith('http') ? bmcUsername : `https://www.buymeacoffee.com/${bmcUsername || 'juliiyabrodska'}`}
+                  href={
+                    bmcUsername.startsWith('http') 
+                      ? bmcUsername 
+                      : `https://www.buymeacoffee.com/${bmcUsername || 'juliiyabrodska'}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-[#FFDD00] hover:bg-[#ffea45] text-black hover:scale-[1.01] active:scale-[0.99] font-bold text-xs font-mono py-2.5 px-4 rounded flex items-center justify-center space-x-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(255,221,0,0.15)] select-none focus:ring-1 focus:ring-yellow-400"
+                  className={`w-full font-bold text-xs font-mono py-2.5 px-4 rounded flex items-center justify-center space-x-2 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] select-none focus:ring-1 ${
+                    bmcUsername.includes('mono') 
+                      ? 'bg-zinc-100 hover:bg-zinc-200 text-black shadow-[0_4px_12px_rgba(255,255,255,0.05)] focus:ring-zinc-400' 
+                      : 'bg-[#FFDD00] hover:bg-[#ffea45] text-black shadow-[0_4px_12px_rgba(255,221,0,0.15)] focus:ring-yellow-400'
+                  }`}
                   id="btn-buy-me-coffee"
                 >
-                  <span className="text-sm">☕</span>
-                  <span className="font-extrabold uppercase">BUY ME A COFFEE</span>
+                  <span className="text-sm">{bmcUsername.includes('mono') ? '💳' : '☕'}</span>
+                  <span className="font-extrabold uppercase">
+                    {bmcUsername.includes('mono') ? 'SUPPORT VIA MONOBANK' : 'BUY ME A COFFEE'}
+                  </span>
                   <ExternalLink className="w-3 h-3 shrink-0 stroke-[2.5px]" />
                 </a>
+
+                {/* GRATITUDE NOTE FOR DONATORS */}
+                <div className="p-2.5 bg-zinc-950/40 rounded border border-zinc-800/60 text-[9.5px] text-zinc-400 font-sans leading-relaxed">
+                  <div className="flex items-center space-x-1.5 text-zinc-300 font-bold mb-1.5 uppercase tracking-wider font-mono">
+                    <Heart className="w-3 h-3 text-rose-500 animate-pulse shrink-0" />
+                    <span>Sincere Thanks to Supporters</span>
+                  </div>
+                  {bmcUsername.includes('mono') ? (
+                    <span>
+                      My sincere thanks to colleagues, partners, and visitors for supporting this project! Your contributions are a vital investment in developing open-source interactive solutions, Lean optimizations, and AI-driven workflows. Every donation inspires further development and the adoption of cutting-edge technologies.
+                    </span>
+                  ) : (
+                    <span>
+                      My sincere thanks for supporting the development of open-source solutions, Lean optimizations, and AI automations. Your involvement and support inspire the creation of new valuable tools for business process automation!
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* BUSINESS & CUSTOM MODEL INQUIRY WIDGET */}
@@ -976,21 +1043,21 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider font-mono">
                     <Briefcase className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>БІЗНЕС ТА АВТОМАТИЗАЦІЯ</span>
+                    <span>BUSINESS & AUTOMATION</span>
                   </div>
                   <button 
                     onClick={() => setShowContactConfig(!showContactConfig)}
                     className="text-[9px] font-mono text-zinc-500 hover:text-indigo-400 underline transition-colors cursor-pointer bg-transparent border-0"
-                    title="Налаштувати контакти"
+                    title="Configure contact links"
                   >
-                    {showContactConfig ? 'СХОВАТИ' : 'НАЛАШТУВАТИ КНОПКИ'}
+                    {showContactConfig ? 'HIDE' : 'CONFIGURE BUTTONS'}
                   </button>
                 </div>
 
                 {showContactConfig && (
                   <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-3 transition-all">
                     <div>
-                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Email для запитів:</label>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Inquiry Email:</label>
                       <input 
                         type="text" 
                         value={contactEmail}
@@ -1004,7 +1071,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Посилання (LinkedIn / Upwork / Website):</label>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Link (LinkedIn / Upwork / Website):</label>
                       <input 
                         type="text" 
                         value={socialLink}
@@ -1018,23 +1085,23 @@ export default function App() {
                       />
                     </div>
                     <p className="text-[8px] text-zinc-500 font-mono leading-tight">
-                      Зміни зберігаються локально. Посилання будуть вести на ваші канали зв'язку.
+                      Changes are saved locally. Links will direct visitors to your official contact channels.
                     </p>
                   </div>
                 )}
 
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
-                  Шукаєте експерта для масштабування бізнесу, оптимізації процесів за Lean-методологією, налаштування n8n/Make автоматизацій чи впровадження VAPI і AI-інструментів?
+                  Looking for an expert to scale your business, optimize operations via Lean methodology, set up n8n/Make automations, or deploy VAPI and custom AI integrations?
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <a
-                    href={`mailto:${contactEmail || 'juliiyabrodska@gmail.com'}?subject=${encodeURIComponent('Business Process Automation & AI Consultation Inquiry')}&body=${encodeURIComponent('Вітаю Юліє! Зацікавила автоматизація бізнес-процесів за допомогою Lean та інтеграції сучасних AI-інструментів (n8n, Make, VAPI). Наші завдання: ')}`}
+                    href={`mailto:${contactEmail || 'juliiyabrodska@gmail.com'}?subject=${encodeURIComponent('Business Process Automation & AI Consultation Inquiry')}&body=${encodeURIComponent('Hello Yuliia! I am interested in business process automation using Lean methodologies and integrating modern AI tools (n8n, Make, VAPI). Our requirements: ')}`}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] font-mono py-2.5 px-2 rounded flex items-center justify-center space-x-1.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-indigo-600/10"
                     id="btn-order-custom-model"
                   >
                     <Mail className="w-3.5 h-3.5 shrink-0" />
-                    <span className="uppercase text-center">ЗАМОВИТИ АВТОМАТИЗАЦІЮ</span>
+                    <span className="uppercase text-center">ORDER AUTOMATION</span>
                   </a>
 
                   <a
@@ -1045,7 +1112,7 @@ export default function App() {
                     id="btn-business-contact"
                   >
                     <Send className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-                    <span className="uppercase text-center text-[9px]">ЗВ'ЯЗОК В LINKEDIN</span>
+                    <span className="uppercase text-center text-[9px]">CONNECT ON LINKEDIN</span>
                   </a>
                 </div>
               </div>
