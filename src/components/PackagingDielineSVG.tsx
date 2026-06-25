@@ -28,7 +28,7 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
   const G = 1.6; // Glue flap width in cm
 
   // Standard engineering line styling
-  const cutLineColor = '#E61C24'; // Coke Red for cuts
+  const cutLineColor = '#E61C24'; // Brand Red for cuts
   const foldLineColor = '#a8a8a9'; // Light gray for folds
   const dimensionColor = '#ffffff'; // White for measurements
   const labelColor = '#8e8e93';

@@ -176,7 +176,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
           
           <div className="absolute top-2.5 left-3 font-mono text-[8px] text-coke-red font-semibold tracking-wider flex items-center gap-1">
             <Sliders className="w-2.5 h-2.5 animate-spin" style={{ animationDuration: '6s' }} />
-            <span>[ 3D PORTRAYAL ENGINE V0.5 • COCA-COLA CO-BRANDING RENDER ]</span>
+            <span>[ 3D PORTRAYAL ENGINE V0.5 • PREMIUM CO-BRANDING RENDER ]</span>
           </div>
 
           {/* Render of Carton Sleeve/Carrier wrapping wrapper representation */}
