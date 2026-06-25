@@ -871,8 +871,7 @@ export default function App() {
                     ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' 
                     : 'bg-coke-dark border-coke-border text-zinc-500 hover:border-zinc-700'
                 }`}>
-                  <span className="text-xs font-bold">Oleh</span>
-                  <span className="text-[8px] font-mono mt-0.5 uppercase tracking-tighter">BOM Manager</span>
+                  <span className="text-xs font-bold text-center">BOM Manager</span>
                   <input 
                     type="checkbox"
                     checked={specs.approvedOleh}
@@ -887,8 +886,7 @@ export default function App() {
                     ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' 
                     : 'bg-coke-dark border-coke-border text-zinc-500 hover:border-zinc-700'
                 }`}>
-                  <span className="text-xs font-bold">Serhiy</span>
-                  <span className="text-[8px] font-mono mt-0.5 uppercase tracking-tighter">Finance</span>
+                  <span className="text-xs font-bold text-center">Finance Lead</span>
                   <input 
                     type="checkbox"
                     checked={specs.approvedSerhiy}
@@ -903,8 +901,7 @@ export default function App() {
                     ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' 
                     : 'bg-coke-dark border-coke-border text-zinc-500 hover:border-zinc-700'
                 }`}>
-                  <span className="text-xs font-bold">Maryna</span>
-                  <span className="text-[8px] font-mono mt-0.5 uppercase tracking-tighter">Marketing</span>
+                  <span className="text-xs font-bold text-center">Marketing Lead</span>
                   <input 
                     type="checkbox"
                     checked={specs.approvedMaryna}
@@ -922,7 +919,7 @@ export default function App() {
                   <Lock className="w-6 h-6 text-coke-red shrink-0" />
                   <div className="space-y-1">
                     <div className="font-bold text-coke-red uppercase">SIGN-OFF LOCKED!</div>
-                    <p className="leading-snug text-zinc-400">Awaiting consent keys from Oleh, Serhiy, and Maryna to download finalized print sheets and contractual sign-off.</p>
+                    <p className="leading-snug text-zinc-400">Awaiting consent keys from BOM Manager, Finance Lead, and Marketing Lead to download finalized print sheets and contractual sign-off.</p>
                   </div>
                 </div>
               ) : (
