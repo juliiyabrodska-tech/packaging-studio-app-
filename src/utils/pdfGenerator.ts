@@ -136,6 +136,48 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
 
   // Helper: Draw standard header frame
   const drawPageBorder = (pageNum: number) => {
+    // Watermark
+    try {
+      doc.saveGraphicsState();
+      // @ts-ignore
+      const gStateClass = (doc as any).GState || (jsPDF as any).GState || (doc.constructor as any).GState;
+      if (gStateClass) {
+        // @ts-ignore
+        const gState = new gStateClass({ opacity: 0.12 });
+        // @ts-ignore
+        doc.setGState(gState);
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(28);
+        doc.setTextColor(100, 100, 100); // Darker gray since opacity is 0.12
+      } else {
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(28);
+        doc.setTextColor(215, 215, 215); // Safe fallback light gray if GState not supported
+      }
+      doc.text(
+        'SAMPLE / DEMO OUTPUT — NOT A REAL APPROVAL',
+        105,
+        148,
+        { angle: 315, align: 'center' }
+      );
+      doc.restoreGraphicsState();
+    } catch (e) {
+      console.warn('Could not draw watermark:', e);
+      try {
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(28);
+        doc.setTextColor(215, 215, 215);
+        doc.text(
+          'SAMPLE / DEMO OUTPUT — NOT A REAL APPROVAL',
+          105,
+          148,
+          { angle: 315, align: 'center' }
+        );
+      } catch (err) {
+        console.error('Ultimate watermark fallback failed:', err);
+      }
+    }
+
     // Thin frame
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
@@ -266,8 +308,6 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
       doc.setTextColor(255, 255, 255);
       doc.setFont('Helvetica', 'bold');
     } else {
-      doc.setFillColor(rowIndex % 2 === 0 ? 250 : 242, rowIndex % 2 === 0 ? 250 : 242, rowIndex % 2 === 0 ? 250 : 242);
-      doc.rect(12, bgY, 186, 6, 'F');
       doc.setTextColor(60, 60, 60);
       doc.setFont('Helvetica', 'normal');
     }
@@ -309,8 +349,6 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
       doc.setTextColor(255, 255, 255);
       doc.setFont('Helvetica', 'bold');
     } else {
-      doc.setFillColor(rowIndex % 2 === 0 ? 250 : 242, rowIndex % 2 === 0 ? 250 : 242, rowIndex % 2 === 0 ? 250 : 242);
-      doc.rect(12, bgY, 186, 6, 'F');
       doc.setTextColor(60, 60, 60);
       doc.setFont('Helvetica', 'normal');
     }
@@ -349,8 +387,6 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
       doc.setTextColor(255, 255, 255);
       doc.setFont('Helvetica', 'bold');
     } else {
-      doc.setFillColor(252, 252, 252);
-      doc.rect(12, bgY, 186, 5.5, 'F');
       doc.setTextColor(60, 60, 60);
       doc.setFont('Helvetica', 'normal');
     }
@@ -388,6 +424,16 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   const splitNotes = doc.splitTextToSize(cleanCyrillic(notes) || 'No custom annotations supplied for this revision block.', 84);
   doc.text(splitNotes, 110, currentY + 4);
 
+  // Plain demo notice directly above manufacturing block
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    'This is a demo-generated document for portfolio/demonstration purposes only. No real approval, contract, or manufacturing agreement exists.',
+    12,
+    238
+  );
+
   // Bottom Contractor Sign-Off Area
   const signY = 242;
   doc.setLineWidth(0.3);
@@ -407,9 +453,9 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
 
   // Real Team signatures mock signoff status representation
   doc.setFont('Helvetica', 'bold');
-  doc.text(`OLEH APPROVAL: APPROVED`, 15, signY + 15);
-  doc.text(`SERHIY APPROVAL: APPROVED`, 75, signY + 15);
-  doc.text(`MARYNA APPROVAL: APPROVED`, 135, signY + 15);
+  doc.text(`BOM MANAGER APPROVAL: APPROVED`, 15, signY + 15);
+  doc.text(`FINANCE LEAD APPROVAL: APPROVED`, 70, signY + 15);
+  doc.text(`MARKETING LEAD APPROVAL: APPROVED`, 130, signY + 15);
 
   doc.setDrawColor(200, 200, 200);
   doc.line(15, signY + 17, 195, signY + 17);
@@ -606,9 +652,9 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.setFontSize(7);
   doc.text('TEAM AGREEMENT STATUS:', 102, blockY + 6);
   doc.setFont('Helvetica', 'normal');
-  doc.text(`- Oleh: APPROVED`, 102, blockY + 11);
-  doc.text(`- Serhiy: APPROVED`, 102, blockY + 20);
-  doc.text(`- Maryna: APPROVED`, 102, blockY + 26);
+  doc.text(`- BOM Manager: APPROVED`, 102, blockY + 11);
+  doc.text(`- Finance Lead: APPROVED`, 102, blockY + 20);
+  doc.text(`- Marketing Lead: APPROVED`, 102, blockY + 26);
 
   // Scale, weight and design format signatures right side
   doc.setFont('Helvetica', 'bold');
@@ -681,9 +727,9 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
     ['Internal Cell Dividers', flavorDividers ? 'ACTIVE / YES' : 'NO', '-', 'Individual partition cardboards'],
     ['Moisture Protective Barrier', moistureBarrier ? 'ACTIVE / YES' : 'NO', '-', 'Hydrophobic barrier coating'],
     ['Easy-Tear Perforations', tearPerforation ? 'ACTIVE / YES' : 'NO', '-', 'Zig-zag tearing opening line'],
-    ['Oleh Approval Sign', specs.approvedOleh ? 'YES / SIGNED' : 'PENDING', '-', 'Technical BOM director Sign-off'],
-    ['Serhiy Approval Sign', specs.approvedSerhiy ? 'YES / SIGNED' : 'PENDING', '-', 'Finance officer Sign-off'],
-    ['Maryna Approval Sign', specs.approvedMaryna ? 'YES / SIGNED' : 'PENDING', '-', 'Creative marketing director Sign-off'],
+    ['BOM Manager Approval Sign', specs.approvedOleh ? 'YES / SIGNED' : 'PENDING', '-', 'Technical BOM director Sign-off'],
+    ['Finance Lead Approval Sign', specs.approvedSerhiy ? 'YES / SIGNED' : 'PENDING', '-', 'Finance officer Sign-off'],
+    ['Marketing Lead Approval Sign', specs.approvedMaryna ? 'YES / SIGNED' : 'PENDING', '-', 'Creative marketing director Sign-off'],
     ['Client Batch Notes', notes.replace(/;/g, ',').replace(/\n/g, ' '), '-', 'Additional supplier notes']
   ];
 

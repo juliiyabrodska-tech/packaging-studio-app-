@@ -506,11 +506,11 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
           <div className="text-coke-gray text-[8px] uppercase">TEAM SIGN-OFF STATUS:</div>
           <div className="flex space-x-2 items-center">
             <span className={`w-1.5 h-1.5 rounded-full ${approvedOleh ? 'bg-emerald-500' : 'bg-coke-red animate-pulse'}`}></span>
-            <span>Ol {approvedOleh ? '✓' : '✗'}</span>
+            <span>BM {approvedOleh ? '✓' : '✗'}</span>
             <span className={`w-1.5 h-1.5 rounded-full ${approvedSerhiy ? 'bg-emerald-500' : 'bg-coke-red animate-pulse'}`}></span>
-            <span>Se {approvedSerhiy ? '✓' : '✗'}</span>
+            <span>FL {approvedSerhiy ? '✓' : '✗'}</span>
             <span className={`w-1.5 h-1.5 rounded-full ${approvedMaryna ? 'bg-emerald-500' : 'bg-coke-red animate-pulse'}`}></span>
-            <span>Ma {approvedMaryna ? '✓' : '✗'}</span>
+            <span>ML {approvedMaryna ? '✓' : '✗'}</span>
           </div>
           <div className="text-[8px] tracking-tight">{approvedOleh && approvedSerhiy && approvedMaryna ? <span className="text-emerald-400 font-bold">SPECS APPROVED✓</span> : <span className="text-coke-red font-bold">BLOCKED: AWAITING SIGN</span>}</div>
         </div>
