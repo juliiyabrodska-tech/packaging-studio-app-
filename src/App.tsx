@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Layers, 
-  Settings2, 
-  FileDown, 
-  Table, 
-  RotateCcw, 
-  Lock, 
-  Unlock, 
-  Check, 
-  Grid, 
-  Wrench, 
+import {
+  Layers,
+  Settings2,
+  FileDown,
+  FileCheck,
+  Table,
+  RotateCcw,
+  Lock,
+  Unlock,
+  Check,
+  Grid,
+  Wrench,
   Info,
   Sparkles,
   Sliders,
@@ -28,7 +29,7 @@ import { PackagingSpecs, INITIAL_SPECS, PackagingType, IndustryId } from './type
 import { INDUSTRIES, getIndustry, GRID_LAYOUTS, buildVariants } from './config/industries';
 import { PackagingDielineSVG } from './components/PackagingDielineSVG';
 import { CansAssortmentPreview } from './components/CansAssortmentPreview';
-import { generateSpecsPDFChecklist, exportSpecsToCSV } from './utils/pdfGenerator';
+import { generateSpecsPDFChecklist, exportSpecsToCSV, generateApprovalFormPDF } from './utils/pdfGenerator';
 
 export default function App() {
   // Helper to migrate legacy Ukrainian state cached in user's localStorage to English
@@ -1085,6 +1086,17 @@ export default function App() {
               >
                 <FileDown className="w-4 h-4" />
                 <span>DOWNLOAD CAD PDF FOR PRINT (2 PAGES, SIGN-OFF)</span>
+              </button>
+
+              {/* APPROVAL FORM EXPORT (Printable sign-off sheet) */}
+              <button
+                onClick={() => generateApprovalFormPDF(specs)}
+                className="w-full bg-indigo-900 hover:bg-indigo-800 border border-indigo-700 text-white text-xs font-mono py-2.5 px-4 rounded flex items-center justify-center space-x-2 cursor-pointer transition-all"
+                id="btn-export-approval-form"
+                title="Export printable approval/sign-off form with signature fields for team members"
+              >
+                <FileCheck className="w-4 h-4" />
+                <span>EXPORT APPROVAL FORM (SIGNATURES)</span>
               </button>
 
               {/* CSV EXPORT (Always accessible) */}
