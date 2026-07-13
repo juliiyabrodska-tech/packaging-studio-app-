@@ -21,7 +21,8 @@ import {
   Briefcase,
   Send
 } from 'lucide-react';
-import { PackagingSpecs, INITIAL_SPECS, PackagingType } from './types';
+import { PackagingSpecs, INITIAL_SPECS, PackagingType, IndustryId } from './types';
+import { INDUSTRIES, getIndustry } from './config/industries';
 import { PackagingDielineSVG } from './components/PackagingDielineSVG';
 import { CansAssortmentPreview } from './components/CansAssortmentPreview';
 import { generateSpecsPDFChecklist, exportSpecsToCSV } from './utils/pdfGenerator';
@@ -232,8 +233,26 @@ export default function App() {
     }
   };
 
-  // Checks if downloading is permitted (must check Oleg, Serhiy, and Maryna)
-  const isApproved = specs.approvedOleh && specs.approvedSerhiy && specs.approvedMaryna;
+  // Active industry profile (drives all product/variant terminology in the UI)
+  const industry = getIndustry(specs.industry);
+
+  // Switch the whole studio to another business vertical, seeding sensible
+  // default variant names so the assortment reads correctly out of the box.
+  const handleIndustryChange = (id: IndustryId) => {
+    const prof = getIndustry(id);
+    setSpecs(prev => ({
+      ...prev,
+      industry: id,
+      flavor1: prof.defaultVariants[0],
+      flavor2: prof.defaultVariants[1],
+      flavor3: prof.defaultVariants[2],
+      flavor4: prof.defaultVariants[3],
+    }));
+  };
+
+  // Checks if downloading is permitted. Sign-off is optional per project:
+  // when requireSignoff is off, export is unlocked immediately.
+  const isApproved = !specs.requireSignoff || (specs.approvedOleh && specs.approvedSerhiy && specs.approvedMaryna);
 
   // Perform dynamic calculation of area of outer paper sheet (BOM calculations)
   const calculateCartonSquareMeters = () => {
@@ -333,7 +352,7 @@ export default function App() {
               <span className="text-[10px] bg-coke-red-dim text-coke-red border border-coke-red/40 px-1.5 py-0.5 rounded font-mono font-bold shrink-0">V0.5 CAD</span>
             </h1>
             <p className="text-[10px] text-coke-gray font-mono uppercase tracking-widest sm:block hidden mt-0.5">
-              PROFESSIONAL PACKAGING CAD AND 3D DESIGN STUDIO • 4 X 0.5L CANISTERS
+              {industry.tagline}
             </p>
           </div>
         </div>
@@ -478,6 +497,21 @@ export default function App() {
                 <span>I. STRUCTURE & DIMENSIONS (CAD)</span>
               </div>
 
+              {/* Industry / business profile selector */}
+              <div className="flex flex-col space-y-1">
+                <label className="text-[10px] text-coke-gray font-mono uppercase">Industry / Business Profile:</label>
+                <select
+                  value={specs.industry}
+                  onChange={(e) => handleIndustryChange(e.target.value as IndustryId)}
+                  className="bg-coke-dark border border-coke-border text-white text-xs rounded p-2 focus:border-coke-red focus:outline-none"
+                  id="select-industry"
+                >
+                  {INDUSTRIES.map((ind) => (
+                    <option key={ind.id} value={ind.id}>{ind.label}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Type drop */}
               <div className="flex flex-col space-y-1">
                 <label className="text-[10px] text-coke-gray font-mono uppercase">Cardboard Structure Profile:</label>
@@ -515,12 +549,12 @@ export default function App() {
               <div className="bg-[#111112] p-2.5 rounded border border-coke-border/40 grid grid-cols-2 gap-2 text-xs font-mono">
                 {/* Fixed Can Dimensions (Reference template) */}
                 <div className="col-span-2 text-[9px] text-zinc-500 uppercase tracking-widest flex justify-between">
-                  <span>Canister standards (0.5L):</span>
+                  <span>{industry.productNoun} standards ({industry.volumeLabel}):</span>
                   <span>{isOverrideEnabled ? 'MANUAL ADJUSTMENT' : 'AUTOMATIC CALCULATIONS ✓'}</span>
                 </div>
-                
+
                 <div>
-                  <label className="text-[9px] text-coke-gray">Can Diameter (cm):</label>
+                  <label className="text-[9px] text-coke-gray">{industry.primaryDimLabel}</label>
                   <input 
                     type="number" 
                     step="0.01" 
@@ -533,7 +567,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="text-[9px] text-coke-gray">Can Height (cm):</label>
+                  <label className="text-[9px] text-coke-gray">{industry.secondaryDimLabel}</label>
                   <input 
                     type="number" 
                     step="0.1" 
@@ -705,14 +739,14 @@ export default function App() {
             <div className="space-y-3 pb-3.5 border-b border-coke-border">
               <div className="flex items-center space-x-2 text-coke-red font-bold text-xs uppercase tracking-wider font-mono">
                 <Sliders className="w-3.5 h-3.5" />
-                <span>III. STAGE FLAVORS (4 VARIETIES BUNDLE)</span>
+                <span>III. {industry.variantNoun.toUpperCase()}S (4 VARIETIES BUNDLE)</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col space-y-0.5">
                   <label className="text-[10px] text-red-400 font-mono flex items-center space-x-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                    <span>1. Flavor Red (Can A):</span>
+                    <span>{industry.variantLabels[0]}</span>
                   </label>
                   <input 
                     type="text" 
@@ -726,7 +760,7 @@ export default function App() {
                 <div className="flex flex-col space-y-0.5">
                   <label className="text-[10px] text-emerald-400 font-mono flex items-center space-x-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>2. Flavor Green (Can B):</span>
+                    <span>{industry.variantLabels[1]}</span>
                   </label>
                   <input 
                     type="text" 
@@ -740,7 +774,7 @@ export default function App() {
                 <div className="flex flex-col space-y-0.5">
                   <label className="text-[10px] text-purple-400 font-mono flex items-center space-x-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                    <span>3. Flavor Violet (Can C):</span>
+                    <span>{industry.variantLabels[2]}</span>
                   </label>
                   <input 
                     type="text" 
@@ -754,7 +788,7 @@ export default function App() {
                 <div className="flex flex-col space-y-0.5">
                   <label className="text-[10px] text-amber-500 font-mono flex items-center space-x-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                    <span>4. Flavor Gold (Can D):</span>
+                    <span>{industry.variantLabels[3]}</span>
                   </label>
                   <input 
                     type="text" 
@@ -859,6 +893,26 @@ export default function App() {
                 </span>
               </div>
 
+              {/* Optional sign-off toggle — makes the studio usable without an approval gate */}
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[10px] text-zinc-300 font-mono flex items-center space-x-1.5">
+                  <span className="w-1.5 h-1.5 bg-coke-red rounded-full"></span>
+                  <span>Require team sign-off before export:</span>
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={specs.requireSignoff}
+                    onChange={(e) => updateSpec('requireSignoff', e.target.checked)}
+                    className="sr-only peer"
+                    id="toggle-require-signoff"
+                  />
+                  <div className="w-8 h-4 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-zinc-400 after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-coke-red peer-checked:after:bg-white"></div>
+                </label>
+              </div>
+
+              {specs.requireSignoff ? (
+              <>
               <p className="text-[10px] text-zinc-400 leading-snug">
                 Official CAD vector PDF export requires active consent flags from three team directors:
               </p>
@@ -928,6 +982,16 @@ export default function App() {
                   <div className="space-y-1">
                     <div className="font-bold uppercase">FULL CAD CLEARANCE GRANTED!</div>
                     <p className="leading-snug text-zinc-300">All team director signatures verified. High-resolution PDF export button is now unlocked and available.</p>
+                  </div>
+                </div>
+              )}
+              </>
+              ) : (
+                <div className="bg-emerald-500/10 border border-emerald-500/40 p-2 rounded text-[10px] text-emerald-400 font-mono flex items-start space-x-2 leading-none">
+                  <Unlock className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="font-bold uppercase">SIGN-OFF DISABLED</div>
+                    <p className="leading-snug text-zinc-300">Approval gate is turned off for this project. PDF export is unlocked and available.</p>
                   </div>
                 </div>
               )}
