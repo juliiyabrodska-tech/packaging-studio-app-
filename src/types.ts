@@ -1,6 +1,12 @@
 export type PackagingType = 'closed_box_2x2' | 'basket_handle' | 'sleeve_pack';
 
+// Business vertical the studio is configured for. Re-labels product/variant
+// terminology across the UI and exports so the tool is not beverage-specific.
+export type IndustryId = 'beverage' | 'cosmetics' | 'food' | 'ecommerce' | 'pharma' | 'generic';
+
 export interface PackagingSpecs {
+  // Active business profile (drives terminology, presets, variant labels).
+  industry: IndustryId;
   packagingType: PackagingType;
   canDiameter: number; // in cm
   canHeight: number; // in cm
@@ -29,15 +35,17 @@ export interface PackagingSpecs {
   tearPerforation: boolean;
 
   // Approvals
+  requireSignoff: boolean; // when false, PDF export is unlocked without sign-off
   approvedOleh: boolean;
   approvedSerhiy: boolean;
   approvedMaryna: boolean;
-  
+
   // Custom log
   notes: string;
 }
 
 export const INITIAL_SPECS: PackagingSpecs = {
+  industry: 'beverage',
   packagingType: 'closed_box_2x2',
   canDiameter: 6.63, // standard 500ml can diameter is ~6.63cm (or 66mm)
   canHeight: 16.8, // standard 500ml can height is ~16.8cm (or 168mm)
@@ -64,9 +72,10 @@ export const INITIAL_SPECS: PackagingSpecs = {
   moistureBarrier: false,
   tearPerforation: true,
 
+  requireSignoff: true,
   approvedOleh: false,
   approvedSerhiy: false,
   approvedMaryna: false,
-  
+
   notes: 'Experimental promo assortments for the summer festival. Custom red-black premium palette, premium matte board lamination.'
 };
