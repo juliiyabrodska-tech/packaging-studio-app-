@@ -117,10 +117,6 @@ const UnitCard: React.FC<UnitCardProps> = ({ shape, accent, name, index, gloss, 
 
 export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
   const {
-    flavor1,
-    flavor2,
-    flavor3,
-    flavor4,
     canDiameter,
     canHeight,
     packagingType,
@@ -132,7 +128,9 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
   const shape = industry.unitShape;
   const volumeLabel = industry.volumeLabel;
   const unitTag = volumeLabel !== '—' ? volumeLabel : productNoun.toUpperCase();
-  const names = [flavor1, flavor2, flavor3, flavor4];
+  const names = specs.variants;
+  const cols = specs.gridCols || 2;
+  const rows = specs.gridRows || 2;
   const artwork = specs.artworkUrl || undefined;
 
   // Multi-state configuration for ultimate Upwork portfolio impact
@@ -179,7 +177,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-[9px] bg-zinc-900 border border-zinc-805 text-zinc-400 font-mono px-1.5 py-0.5 rounded uppercase">{env} MODE</span>
-          <span className="text-[10px] font-mono text-coke-gray hidden sm:inline">4 × {volumeLabel} {productNoun.toUpperCase()}S</span>
+          <span className="text-[10px] font-mono text-coke-gray hidden sm:inline">{names.length} × {volumeLabel} {productNoun.toUpperCase()}S</span>
         </div>
       </div>
 
@@ -294,13 +292,13 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
             <span>[ 3D PORTRAYAL ENGINE V0.5 • PREMIUM CO-BRANDING RENDER ]</span>
           </div>
 
-          {/* Data-driven retail-unit assortment (shape adapts to industry) */}
-          <div className="relative w-full grid grid-cols-4 gap-3 py-6 mt-3 z-10" style={{ transform: 'translateZ(15px)' }}>
+          {/* Data-driven retail-unit assortment (shape + grid adapt to config) */}
+          <div className="relative w-full grid gap-3 py-6 mt-3 z-10" style={{ transform: 'translateZ(15px)', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {names.map((name, i) => (
               <UnitCard
                 key={i}
                 shape={shape}
-                accent={ACCENTS[i]}
+                accent={ACCENTS[i % 4]}
                 name={name}
                 index={i}
                 gloss={gloss}
@@ -328,7 +326,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
               <div className="text-[6.5px] font-mono text-red-400 absolute inset-0 flex flex-col items-center justify-center bg-red-950/20 pointer-events-none leading-none gap-0.5">
                 <div>// DIELINE COLLISION BOUNDARY</div>
                 <div className="font-bold border border-red-500/50 px-1 py-0.5 mt-1 bg-black">
-                  L:{(canDiameter * 2).toFixed(1)}cm x W:{(canDiameter * 2).toFixed(1)}cm x H:{canHeight}cm
+                  L:{(canDiameter * cols).toFixed(1)}cm x W:{(canDiameter * rows).toFixed(1)}cm x H:{canHeight}cm
                 </div>
               </div>
             )}
@@ -352,7 +350,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
           )}
 
           <div className="text-center text-[10px] text-zinc-400 font-mono mt-4 leading-normal select-none">
-            This interactive 3D simulation depicts the precise layout of <span className="text-coke-red font-bold">4 × {volumeLabel}</span> {productNoun.toLowerCase()}s inside the selected packaging architecture:{' '}
+            This interactive 3D simulation depicts the precise layout of <span className="text-coke-red font-bold">{names.length} × {volumeLabel}</span> {productNoun.toLowerCase()}s inside the selected packaging architecture:{' '}
             <span className="text-white font-semibold underline underline-offset-2 decoration-coke-red">
               {packagingType === 'closed_box_2x2' ? 'Closed Box 2x2' : packagingType === 'basket_handle' ? 'Carrier with Handle' : 'Tight Sleeve Wrap'}
             </span>.
@@ -366,7 +364,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
       <div className="h-16 bg-coke-black border-t border-coke-border p-3 grid grid-cols-12 text-[9px] font-mono text-white select-none shrink-0 gap-2 items-center">
         <div className="col-span-5 border-r border-coke-border/40 pr-2">
           <span className="text-coke-gray">TOTAL BUNDLE CONTENT:</span>
-          <div className="text-xs font-extrabold text-coke-red tracking-tight">4 × {volumeLabel} ({productNoun.toUpperCase()} BUNDLE)</div>
+          <div className="text-xs font-extrabold text-coke-red tracking-tight">{names.length} × {volumeLabel} ({productNoun.toUpperCase()} BUNDLE)</div>
         </div>
         <div className="col-span-4 border-r border-coke-border/40 px-1 text-center">
           <button
@@ -379,7 +377,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
         </div>
         <div className="col-span-3 text-right">
           <span className="text-coke-gray">PACK CONFIGURATION:</span>
-          <div className="text-xs font-extrabold text-[#fff] tracking-tight">4-UNIT VARIETY PACK</div>
+          <div className="text-xs font-extrabold text-[#fff] tracking-tight">{cols}×{rows} — {names.length}-UNIT PACK</div>
         </div>
       </div>
 
