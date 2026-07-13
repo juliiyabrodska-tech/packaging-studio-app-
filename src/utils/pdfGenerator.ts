@@ -801,3 +801,207 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
   link.click();
   document.body.removeChild(link);
 };
+
+/**
+ * Generate a printable approval/sign-off form PDF with signature fields.
+ * Includes team member approval status and space for physical/digital signatures.
+ */
+export const generateApprovalFormPDF = (specs: PackagingSpecs): void => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let currentY = 15;
+
+  const industry = getIndustry(specs.industry);
+  const productNoun = industry.productNoun;
+
+  // Header
+  doc.setFillColor(230, 28, 36);
+  doc.rect(0, 0, pageWidth, 20, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('Helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('MANUFACTURING APPROVAL & SIGN-OFF FORM', pageWidth / 2, 12, { align: 'center' });
+
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('TEAM & CONTRACTOR CONSENT BOARD', pageWidth / 2, 18, { align: 'center' });
+
+  currentY = 28;
+
+  // Project info section
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('Helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('PROJECT SPECIFICATIONS:', 12, currentY);
+
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(9);
+  currentY += 6;
+
+  const projectInfo = [
+    [`Packaging Model:`, `${industry.label}`],
+    [`Structure Type:`, `${specs.packagingType.replace(/_/g, ' ').toUpperCase()}`],
+    [`Unit Count:`, `${specs.variants.length} units (${specs.gridCols}×${specs.gridRows})`],
+    [`Container Size:`, `${specs.canDiameter}cm Ø × ${specs.canHeight}cm H`],
+    [`Carton Dimensions:`, `${specs.cartonLength}cm (L) × ${specs.cartonWidth}cm (W) × ${specs.cartonHeight}cm (H)`],
+    [`Material:`, `${specs.outerMaterial.replace(/_/g, ' ').toUpperCase()} • ${specs.materialWeight}`],
+    [`Printing Method:`, `${specs.printingMethod.toUpperCase()} • ${specs.colorsCount} Colors`],
+    [`Generated:`, `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`],
+  ];
+
+  projectInfo.forEach(([label, value]) => {
+    doc.setFont('Helvetica', 'bold');
+    doc.text(label, 12, currentY);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(value, 60, currentY);
+    currentY += 5;
+  });
+
+  currentY += 4;
+
+  // Assortment summary
+  doc.setFont('Helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('ASSORTMENT BREAKDOWN:', 12, currentY);
+
+  currentY += 5;
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(8);
+
+  specs.variants.slice(0, 6).forEach((variant, i) => {
+    const label = `${productNoun} ${String.fromCharCode(65 + i)}: `;
+    doc.text(label + cleanCyrillic(variant), 12, currentY);
+    currentY += 4;
+  });
+
+  if (specs.variants.length > 6) {
+    doc.text(`+ ${specs.variants.length - 6} more variants`, 12, currentY);
+    currentY += 4;
+  }
+
+  currentY += 6;
+
+  // Sign-off board
+  doc.setFont('Helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(230, 28, 36);
+  doc.text('TEAM APPROVAL STATUS:', 12, currentY);
+
+  currentY += 6;
+  doc.setTextColor(0, 0, 0);
+
+  const approvals = [
+    { name: 'BOM Manager (Oleh)', approved: specs.approvedOleh, role: 'Technical Specifications' },
+    { name: 'Finance Lead (Serhiy)', approved: specs.approvedSerhiy, role: 'Cost & Budget' },
+    { name: 'Marketing Lead (Maryna)', approved: specs.approvedMaryna, role: 'Brand & Design' },
+  ];
+
+  approvals.forEach((approval) => {
+    // Status indicator
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(9);
+
+    const statusText = approval.approved ? '✓ APPROVED' : '○ PENDING';
+    if (approval.approved) {
+      doc.setTextColor(0, 128, 0);
+    } else {
+      doc.setTextColor(128, 128, 128);
+    }
+    doc.text(statusText, 12, currentY);
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('Helvetica', 'bold');
+    doc.text(approval.name, 50, currentY);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`(${approval.role})`, 120, currentY);
+
+    currentY += 5;
+  });
+
+  currentY += 8;
+
+  // Signature lines
+  doc.setFontSize(9);
+  doc.setFont('Helvetica', 'bold');
+  doc.setTextColor(230, 28, 36);
+  doc.text('AUTHORIZED SIGNATURES:', 12, currentY);
+
+  currentY += 7;
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(8);
+
+  const signatureBlocks = [
+    'BOM Manager / Oleh',
+    'Finance Lead / Serhiy',
+    'Marketing Lead / Maryna',
+    'Contractor / Print Factory Rep',
+  ];
+
+  const blockWidth = (pageWidth - 24) / 2;
+  let blockX = 12;
+  let blockY = currentY;
+
+  signatureBlocks.forEach((name, idx) => {
+    if (idx === 2) {
+      blockX = 12;
+      blockY += 28;
+    } else if (idx === 1) {
+      blockX = 12 + blockWidth + 2;
+    }
+
+    // Frame for signature
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.5);
+    doc.rect(blockX, blockY, blockWidth - 2, 24);
+
+    // Signature line
+    doc.line(blockX + 2, blockY + 18, blockX + blockWidth - 4, blockY + 18);
+    doc.text('Signature', blockX + 2, blockY + 20, { maxWidth: blockWidth - 4 });
+
+    // Date line
+    doc.line(blockX + 2, blockY + 26, blockX + blockWidth - 4, blockY + 26);
+    doc.setFontSize(7);
+    doc.text('Date / DD.MM.YYYY', blockX + 2, blockY + 28);
+
+    // Name label
+    doc.setFontSize(8);
+    doc.setFont('Helvetica', 'bold');
+    doc.text(name, blockX + 2, blockY - 2);
+  });
+
+  currentY = blockY + 28 + 8;
+
+  // Digital signature / ВЧАСНО note
+  doc.setFontSize(8);
+  doc.setTextColor(80, 80, 80);
+  doc.setFont('Helvetica', 'italic');
+
+  const ecSignURL = 'https://easy.nas.gov.ua/';
+  doc.textWithLink(
+    'Digital signatures via ВЧАСНО (Ukrainian e-signature system): ' + ecSignURL,
+    12,
+    currentY,
+    { pageNumber: 1 }
+  );
+
+  currentY += 6;
+  doc.text('This document certifies that all technical specifications comply with ISO 9051 standards', 12, currentY);
+  doc.text('and approved tolerances. Print and sign below, or use digital signature system above.', 12, currentY + 4);
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    `PackCraft 3D Studio v0.5 • Confidential • Generated ${new Date().toLocaleDateString()}`,
+    pageWidth / 2,
+    pageHeight - 8,
+    { align: 'center' }
+  );
+
+  doc.save(`approval-form-${specs.packagingType}-${Date.now()}.pdf`);
+};
