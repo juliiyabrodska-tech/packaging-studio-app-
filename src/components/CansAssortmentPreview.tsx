@@ -1,12 +1,116 @@
 import React, { useState } from 'react';
 import { PackagingSpecs } from '../types';
-import { Rotate3d, Sun, Eye, Sliders, Layers, Sparkles, Activity } from 'lucide-react';
+import { getIndustry, UnitShape } from '../config/industries';
+import { Rotate3d, Sun, Eye, Sliders, Sparkles, Activity } from 'lucide-react';
 
 interface PreviewProps {
   specs: PackagingSpecs;
 }
 
 type RenderEnvironment = 'blueprint' | 'studio' | 'production';
+
+// Per-unit accent palette (A–D). Full literal class strings so Tailwind's JIT
+// scanner can see them.
+interface Accent {
+  grad: string;
+  border: string;
+  text: string;
+  labelBorder: string;
+}
+const ACCENTS: Accent[] = [
+  { grad: 'from-red-950 via-[#E61C24] to-red-950', border: 'border-red-500/20', text: 'text-coke-red', labelBorder: 'border-red-500/30' },
+  { grad: 'from-emerald-950 via-emerald-600 to-emerald-950', border: 'border-emerald-500/20', text: 'text-emerald-400', labelBorder: 'border-emerald-500/30' },
+  { grad: 'from-purple-950 via-purple-600 to-purple-950', border: 'border-purple-500/20', text: 'text-purple-400', labelBorder: 'border-purple-500/30' },
+  { grad: 'from-amber-950 via-amber-600 to-amber-950', border: 'border-amber-500/20', text: 'text-amber-500', labelBorder: 'border-amber-500/30' },
+];
+
+// Body geometry per archetype (height + rounding), plus which top cap and
+// whether a rounded base foot is drawn.
+const SHAPE_CFG: Record<UnitShape, { body: string; top: 'lid' | 'cap' | 'jarlid' | 'flap' | 'crimp'; bottom: boolean }> = {
+  can: { body: 'w-16 h-36 rounded-lg', top: 'lid', bottom: true },
+  bottle: { body: 'w-16 h-32 rounded-lg rounded-t-2xl', top: 'cap', bottom: true },
+  jar: { body: 'w-[68px] h-24 rounded-md', top: 'jarlid', bottom: false },
+  box: { body: 'w-16 h-32 rounded-sm', top: 'flap', bottom: false },
+  pouch: { body: 'w-16 h-36 rounded-b-3xl rounded-t-lg', top: 'crimp', bottom: false },
+};
+
+const GlossHighlights: React.FC<{ gloss: number }> = ({ gloss }) => (
+  <>
+    <div className="absolute left-1.5 top-0 bottom-0 w-2.5 bg-white/20 blur-[1px] pointer-events-none rounded-l" style={{ opacity: gloss / 100 }} />
+    <div className="absolute right-3 top-0 bottom-0 w-1 bg-white/10 blur-[1.5px] pointer-events-none" style={{ opacity: gloss / 120 }} />
+  </>
+);
+
+const TopCap: React.FC<{ kind: string }> = ({ kind }) => {
+  switch (kind) {
+    case 'lid':
+      return (
+        <div className="absolute -top-1.5 left-1 right-1 h-2.5 bg-zinc-400 rounded-t-full border border-zinc-200 flex items-center justify-center z-20">
+          <div className="w-4 h-1 bg-zinc-600 rounded-full" />
+        </div>
+      );
+    case 'cap':
+      return (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
+          <div className="w-4 h-2 bg-zinc-300 rounded-t-md border border-zinc-400" />
+          <div className="w-5 h-2 bg-gradient-to-b from-zinc-500 to-zinc-700 border-x border-zinc-600" />
+        </div>
+      );
+    case 'jarlid':
+      return <div className="absolute -top-2 left-0 right-0 h-3 bg-zinc-300 rounded-t-md border border-zinc-400 z-20" />;
+    case 'flap':
+      return <div className="absolute top-0 left-0 right-0 h-3 bg-black/25 border-b border-white/25 z-20" />;
+    case 'crimp':
+      return <div className="absolute -top-1 left-0 right-0 h-2 bg-zinc-500/60 border-y border-dashed border-white/40 z-20" />;
+    default:
+      return null;
+  }
+};
+
+interface UnitCardProps {
+  shape: UnitShape;
+  accent: Accent;
+  name: string;
+  index: number;
+  gloss: number;
+  showWireframe: boolean;
+  productNoun: string;
+  unitTag: string;
+}
+
+const UnitCard: React.FC<UnitCardProps> = ({ shape, accent, name, index, gloss, showWireframe, productNoun, unitTag }) => {
+  const cfg = SHAPE_CFG[shape];
+  const fallback = `${productNoun} ${index + 1}`;
+  return (
+    <div className="flex flex-col items-center group">
+      <div className="relative flex items-end justify-center h-[150px]">
+        <div
+          className={`relative ${cfg.body} bg-gradient-to-r ${accent.grad} p-1.5 flex flex-col justify-between shadow-lg transition-all duration-200 ${
+            showWireframe ? 'border-2 border-dashed border-emerald-500' : `border ${accent.border}`
+          }`}
+        >
+          <GlossHighlights gloss={gloss} />
+          <TopCap kind={cfg.top} />
+
+          <div className="text-[7.5px] font-mono text-zinc-300 font-bold tracking-tight uppercase leading-none mt-1 relative z-10">
+            {productNoun} {String(index + 1).padStart(2, '0')}
+          </div>
+          <div className="flex-1 flex items-center justify-center py-1 relative z-10">
+            <div className={`rotate-90 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded border ${accent.labelBorder} whitespace-nowrap font-mono max-w-[90px] truncate text-center font-extrabold tracking-wide`}>
+              {name || fallback}
+            </div>
+          </div>
+          <div className="bg-black/50 text-white text-[7px] font-mono py-0.5 rounded text-center font-bold tracking-wider relative z-10">
+            {unitTag}
+          </div>
+
+          {cfg.bottom && <div className="absolute -bottom-1 left-1.5 right-1.5 h-1.5 bg-zinc-500 rounded-b-full" />}
+        </div>
+      </div>
+      <span className={`text-[9px] font-mono ${accent.text} mt-2.5 font-bold text-center truncate w-full`}>{name || fallback}</span>
+    </div>
+  );
+};
 
 export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
   const {
@@ -19,6 +123,13 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
     packagingType,
     outerMaterial,
   } = specs;
+
+  const industry = getIndustry(specs.industry);
+  const productNoun = industry.productNoun;
+  const shape = industry.unitShape;
+  const volumeLabel = industry.volumeLabel;
+  const unitTag = volumeLabel !== '—' ? volumeLabel : productNoun.toUpperCase();
+  const names = [flavor1, flavor2, flavor3, flavor4];
 
   // Multi-state configuration for ultimate Upwork portfolio impact
   const [rotation, setRotation] = useState<number>(-5);
@@ -49,7 +160,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
 
   return (
     <div className="w-full h-full bg-[#0d0d0f] rounded-lg border border-coke-border overflow-hidden flex flex-col justify-between">
-      
+
       {/* Viewport header */}
       <div className="h-10 bg-coke-black border-b border-coke-border flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center space-x-2">
@@ -64,13 +175,13 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-[9px] bg-zinc-900 border border-zinc-805 text-zinc-400 font-mono px-1.5 py-0.5 rounded uppercase">{env} MODE</span>
-          <span className="text-[10px] font-mono text-coke-gray hidden sm:inline">4 X 0.5L CANISTERS</span>
+          <span className="text-[10px] font-mono text-coke-gray hidden sm:inline">4 × {volumeLabel} {productNoun.toUpperCase()}S</span>
         </div>
       </div>
 
       {/* Interactive Controls Bar */}
       <div className="bg-coke-black/90 border-b border-coke-border/80 p-3 grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs font-mono select-none">
-        
+
         {/* Rotation & Tilt */}
         <div className="sm:col-span-5 space-y-2 border-r border-coke-border/40 pr-0.5 sm:pr-3">
           <div className="flex items-center justify-between text-[10px] text-zinc-400">
@@ -82,11 +193,11 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
               <div className="flex justify-between text-[8px] text-zinc-500">
                 <span>YAW: Horizontal</span>
               </div>
-              <input 
-                type="range" 
-                min="-45" 
-                max="45" 
-                value={rotation} 
+              <input
+                type="range"
+                min="-45"
+                max="45"
+                value={rotation}
                 onChange={(e) => setRotation(parseInt(e.target.value))}
                 className="w-full accent-coke-red h-1 bg-zinc-800 rounded-lg cursor-pointer"
               />
@@ -95,11 +206,11 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
               <div className="flex justify-between text-[8px] text-zinc-500">
                 <span>PITCH: Vertical</span>
               </div>
-              <input 
-                type="range" 
-                min="-15" 
-                max="25" 
-                value={tilt} 
+              <input
+                type="range"
+                min="-15"
+                max="25"
+                value={tilt}
                 onChange={(e) => setTilt(parseInt(e.target.value))}
                 className="w-full accent-coke-red h-1 bg-zinc-800 rounded-lg cursor-pointer"
               />
@@ -114,22 +225,22 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
             <span className="text-white font-bold">{gloss}%</span>
           </div>
           <div className="flex items-center gap-2">
-            <input 
-              type="range" 
-              min="10" 
-              max="100" 
-              value={gloss} 
+            <input
+              type="range"
+              min="10"
+              max="100"
+              value={gloss}
               onChange={(e) => setGloss(parseInt(e.target.value))}
               className="flex-1 accent-coke-red h-1 bg-zinc-800 rounded-lg cursor-pointer"
             />
             <button
               onClick={() => setShowWireframe(!showWireframe)}
               className={`px-2 py-1 rounded text-[9px] border font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                showWireframe 
-                  ? 'bg-coke-red/25 border-coke-red text-white' 
+                showWireframe
+                  ? 'bg-coke-red/25 border-coke-red text-white'
                   : 'bg-zinc-900 border-zinc-800 text-coke-gray hover:text-white'
               }`}
-              title="Apply technical CAD measurements wireframe on canisters"
+              title="Apply technical CAD measurements wireframe on units"
             >
               <Eye className="w-3 h-3" />
               <span>GRID</span>
@@ -146,8 +257,8 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
                 key={mode}
                 onClick={() => setEnv(mode)}
                 className={`flex-1 py-1 text-[8px] font-bold rounded border uppercase cursor-pointer transition-all ${
-                  env === mode 
-                    ? 'bg-zinc-800 border-zinc-700 text-white font-extrabold' 
+                  env === mode
+                    ? 'bg-zinc-800 border-zinc-700 text-white font-extrabold'
                     : 'bg-transparent border-transparent text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -161,180 +272,43 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
 
       {/* Main viewport visual area */}
       <div className={`flex-1 flex flex-col items-center justify-center p-4 transition-colors duration-300 ${getGridStyle()}`}>
-        
+
         {/* Outer simulation box representation */}
-        <div 
+        <div
           className="relative w-full max-w-lg p-6 bg-coke-black/95 rounded-xl border border-coke-border/90 backdrop-blur-md shadow-2xl flex flex-col items-center transition-all duration-300"
-          style={{ 
-            transform: `perspective(1000px) rotateY(${rotation}deg) rotateX(${tilt}deg)`, 
+          style={{
+            transform: `perspective(1000px) rotateY(${rotation}deg) rotateX(${tilt}deg)`,
             transformStyle: 'preserve-3d',
-            boxShadow: showWireframe 
-              ? '0 25px 50px -12px rgba(230, 28, 36, 0.15)' 
+            boxShadow: showWireframe
+              ? '0 25px 50px -12px rgba(230, 28, 36, 0.15)'
               : '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
           }}
         >
-          
+
           <div className="absolute top-2.5 left-3 font-mono text-[8px] text-coke-red font-semibold tracking-wider flex items-center gap-1">
             <Sliders className="w-2.5 h-2.5 animate-spin" style={{ animationDuration: '6s' }} />
             <span>[ 3D PORTRAYAL ENGINE V0.5 • PREMIUM CO-BRANDING RENDER ]</span>
           </div>
 
-          {/* Render of Carton Sleeve/Carrier wrapping wrapper representation */}
-          <div className="relative w-full grid grid-cols-4 gap-3 py-6 mt-3 relative z-10" style={{ transform: 'translateZ(15px)' }}>
-            
-            {/* Liquid Canister 1 (Cherry) */}
-            <div className="flex flex-col items-center group">
-              <div 
-                className={`relative w-16 h-36 bg-gradient-to-r from-red-950 via-[#E61C24] to-red-950 rounded-lg p-1.5 flex flex-col justify-between shadow-lg transition-all duration-200 ${
-                  showWireframe ? 'border-2 border-dashed border-emerald-500' : 'border border-red-500/20'
-                }`}
-              >
-                {/* Dynamic Gloss highlights */}
-                <div 
-                  className="absolute left-1.5 top-0 bottom-0 w-2.5 bg-white/20 blur-[1px] pointer-events-none rounded-l transition-opacity"
-                  style={{ opacity: gloss / 100 }}
-                ></div>
-                <div 
-                  className="absolute right-3 top-0 bottom-0 w-1 bg-white/10 blur-[1.5px] pointer-events-none transition-opacity"
-                  style={{ opacity: gloss / 120 }}
-                ></div>
-                
-                {/* Can top lid */}
-                <div className="absolute -top-1.5 left-1 right-1 h-2.5 bg-zinc-400 rounded-t-full border border-zinc-200 flex items-center justify-center">
-                  <div className="w-4 h-1 bg-zinc-600 rounded-full"></div>
-                </div>
-
-                {/* Flavor label area */}
-                <div className="text-[7.5px] font-mono text-zinc-300 font-bold tracking-tight uppercase leading-none mt-1">CAN 01</div>
-                <div className="flex-1 flex items-center justify-center py-1">
-                  <div className="rotate-90 bg-black/60 text-[#fff] text-[9.5px] px-1.5 py-0.5 rounded border border-red-500/30 whitespace-nowrap font-mono max-w-[90px] truncate text-center font-extrabold tracking-wide">
-                    {flavor1 || 'FLAVOR 1'}
-                  </div>
-                </div>
-                
-                {/* Can base lid */}
-                <div className="absolute -bottom-1 left-1.5 right-1.5 h-1.5 bg-zinc-500 rounded-b-full"></div>
-                
-                {/* Assortment tag */}
-                <div className="bg-black/50 text-[#ffffff] text-[7px] font-mono py-0.5 rounded text-center font-bold border-t border-red-400/20 tracking-wider">
-                  ALU 0.5L
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-coke-red mt-2.5 font-bold text-center truncate w-full">{flavor1 || 'Cherry Mix'}</span>
-            </div>
-
-            {/* Liquid Canister 2 (Lime) */}
-            <div className="flex flex-col items-center group">
-              <div 
-                className={`relative w-16 h-36 bg-gradient-to-r from-emerald-950 via-emerald-600 to-emerald-950 rounded-lg p-1.5 flex flex-col justify-between shadow-lg transition-all duration-200 ${
-                  showWireframe ? 'border-2 border-dashed border-emerald-500' : 'border border-emerald-500/20'
-                }`}
-              >
-                {/* Gloss highlights */}
-                <div 
-                  className="absolute left-1.5 top-0 bottom-0 w-2.5 bg-white/20 blur-[1px] pointer-events-none rounded-l transition-opacity"
-                  style={{ opacity: gloss / 100 }}
-                ></div>
-                <div 
-                  className="absolute right-3 top-0 bottom-0 w-1 bg-white/10 blur-[1.5px] pointer-events-none transition-opacity"
-                  style={{ opacity: gloss / 120 }}
-                ></div>
-                
-                {/* Can top lid */}
-                <div className="absolute -top-1.5 left-1 right-1 h-2.5 bg-zinc-400 rounded-t-full border border-zinc-200 flex items-center justify-center">
-                  <div className="w-4 h-1 bg-zinc-600 rounded-full"></div>
-                </div>
-
-                <div className="text-[7.5px] font-mono text-zinc-300 font-bold tracking-tight uppercase leading-none mt-1">CAN 02</div>
-                <div className="flex-1 flex items-center justify-center py-1">
-                  <div className="rotate-90 bg-black/60 text-[#fff] text-[9.5px] px-1.5 py-0.5 rounded border border-emerald-500/30 whitespace-nowrap font-mono max-w-[90px] truncate text-center font-extrabold tracking-wide">
-                    {flavor2 || 'FLAVOR 2'}
-                  </div>
-                </div>
-                <div className="absolute -bottom-1 left-1.5 right-1.5 h-1.5 bg-zinc-500 rounded-b-full"></div>
-                <div className="bg-black/50 text-[#ffffff] text-[7px] font-mono py-0.5 rounded text-center font-bold border-t border-emerald-400/20 tracking-wider">
-                  ALU 0.5L
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-emerald-400 mt-2.5 font-bold text-center truncate w-full">{flavor2 || 'Lime Tonic'}</span>
-            </div>
-
-            {/* Liquid Canister 3 (Berry) */}
-            <div className="flex flex-col items-center group">
-              <div 
-                className={`relative w-16 h-36 bg-gradient-to-r from-purple-950 via-purple-600 to-purple-950 rounded-lg p-1.5 flex flex-col justify-between shadow-lg transition-all duration-200 ${
-                  showWireframe ? 'border-2 border-dashed border-emerald-500' : 'border border-purple-500/20'
-                }`}
-              >
-                {/* Gloss highlights */}
-                <div 
-                  className="absolute left-1.5 top-0 bottom-0 w-2.5 bg-white/20 blur-[1px] pointer-events-none rounded-l transition-opacity"
-                  style={{ opacity: gloss / 100 }}
-                ></div>
-                <div 
-                  className="absolute right-3 top-0 bottom-0 w-1 bg-white/10 blur-[1.5px] pointer-events-none transition-opacity"
-                  style={{ opacity: gloss / 120 }}
-                ></div>
-                
-                {/* Can top lid */}
-                <div className="absolute -top-1.5 left-1 right-1 h-2.5 bg-zinc-400 rounded-t-full border border-zinc-200 flex items-center justify-center">
-                  <div className="w-4 h-1 bg-zinc-600 rounded-full"></div>
-                </div>
-
-                <div className="text-[7.5px] font-mono text-zinc-300 font-bold tracking-tight uppercase leading-none mt-1">CAN 03</div>
-                <div className="flex-1 flex items-center justify-center py-1">
-                  <div className="rotate-90 bg-black/60 text-[#fff] text-[9.5px] px-1.5 py-0.5 rounded border border-purple-500/30 whitespace-nowrap font-mono max-w-[90px] truncate text-center font-extrabold tracking-wide">
-                    {flavor3 || 'FLAVOR 3'}
-                  </div>
-                </div>
-                <div className="absolute -bottom-1 left-1.5 right-1.5 h-1.5 bg-zinc-500 rounded-b-full"></div>
-                <div className="bg-black/50 text-[#ffffff] text-[7px] font-mono py-0.5 rounded text-center font-bold border-t border-purple-400/20 tracking-wider">
-                  ALU 0.5L
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-purple-400 mt-2.5 font-bold text-center truncate w-full">{flavor3 || 'Berry Buzz'}</span>
-            </div>
-
-            {/* Liquid Canister 4 (Orange) */}
-            <div className="flex flex-col items-center group">
-              <div 
-                className={`relative w-16 h-36 bg-gradient-to-r from-amber-950 via-amber-600 to-amber-950 rounded-lg p-1.5 flex flex-col justify-between shadow-lg transition-all duration-200 ${
-                  showWireframe ? 'border-2 border-dashed border-emerald-500' : 'border border-amber-500/20'
-                }`}
-              >
-                {/* Gloss highlights */}
-                <div 
-                  className="absolute left-1.5 top-0 bottom-0 w-2.5 bg-white/20 blur-[1px] pointer-events-none rounded-l transition-opacity"
-                  style={{ opacity: gloss / 100 }}
-                ></div>
-                <div 
-                  className="absolute right-3 top-0 bottom-0 w-1 bg-white/10 blur-[1.5px] pointer-events-none transition-opacity"
-                  style={{ opacity: gloss / 120 }}
-                ></div>
-                
-                {/* Can top lid */}
-                <div className="absolute -top-1.5 left-1 right-1 h-2.5 bg-zinc-400 rounded-t-full border border-zinc-200 flex items-center justify-center">
-                  <div className="w-4 h-1 bg-zinc-600 rounded-full"></div>
-                </div>
-
-                <div className="text-[7.5px] font-mono text-zinc-300 font-bold tracking-tight uppercase leading-none mt-1">CAN 04</div>
-                <div className="flex-1 flex items-center justify-center py-1">
-                  <div className="rotate-90 bg-black/60 text-[#fff] text-[9.5px] px-1.5 py-0.5 rounded border border-amber-500/30 whitespace-nowrap font-mono max-w-[90px] truncate text-center font-extrabold tracking-wide">
-                    {flavor4 || 'FLAVOR 4'}
-                  </div>
-                </div>
-                <div className="absolute -bottom-1 left-1.5 right-1.5 h-1.5 bg-zinc-500 rounded-b-full"></div>
-                <div className="bg-black/50 text-[#ffffff] text-[7px] font-mono py-0.5 rounded text-center font-bold border-t border-amber-500/20 tracking-wider">
-                  ALU 0.5L
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-amber-500 mt-2.5 font-bold text-center truncate w-full">{flavor4 || 'Orange Fizz'}</span>
-            </div>
-
+          {/* Data-driven retail-unit assortment (shape adapts to industry) */}
+          <div className="relative w-full grid grid-cols-4 gap-3 py-6 mt-3 z-10" style={{ transform: 'translateZ(15px)' }}>
+            {names.map((name, i) => (
+              <UnitCard
+                key={i}
+                shape={shape}
+                accent={ACCENTS[i]}
+                name={name}
+                index={i}
+                gloss={gloss}
+                showWireframe={showWireframe}
+                productNoun={productNoun}
+                unitTag={unitTag}
+              />
+            ))}
           </div>
 
           {/* Outer packaging sleeve cutaway line */}
-          <div 
+          <div
             className={`absolute left-4 right-4 bottom-14 top-14 bg-white/5 border rounded-lg pointer-events-none flex flex-col justify-between p-2.5 transition-all duration-300 ${
               showWireframe ? 'border-2 border-red-500 shadow-[0_0_15px_rgba(230,28,36,0.3)]' : 'border-white/20'
             }`}
@@ -344,12 +318,12 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
               <span>{`MAT: ${outerMaterial.toUpperCase()}`}</span>
               <span>{`TYPE: ${packagingType.toUpperCase()}`}</span>
             </div>
-            
+
             {showWireframe && (
               <div className="text-[6.5px] font-mono text-red-400 absolute inset-0 flex flex-col items-center justify-center bg-red-950/20 pointer-events-none leading-none gap-0.5">
                 <div>// DIELINE COLLISION BOUNDARY</div>
                 <div className="font-bold border border-red-500/50 px-1 py-0.5 mt-1 bg-black">
-                  L:{canDiameter*2}cm x W:{canDiameter*2}cm x H:{canHeight}cm
+                  L:{(canDiameter * 2).toFixed(1)}cm x W:{(canDiameter * 2).toFixed(1)}cm x H:{canHeight}cm
                 </div>
               </div>
             )}
@@ -373,7 +347,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
           )}
 
           <div className="text-center text-[10px] text-zinc-400 font-mono mt-4 leading-normal select-none">
-            This interactive 3D simulation depicts the precise layout of <span className="text-coke-red font-bold">4x0.5L</span> cans inside the selected packaging architecture:{' '}
+            This interactive 3D simulation depicts the precise layout of <span className="text-coke-red font-bold">4 × {volumeLabel}</span> {productNoun.toLowerCase()}s inside the selected packaging architecture:{' '}
             <span className="text-white font-semibold underline underline-offset-2 decoration-coke-red">
               {packagingType === 'closed_box_2x2' ? 'Closed Box 2x2' : packagingType === 'basket_handle' ? 'Carrier with Handle' : 'Tight Sleeve Wrap'}
             </span>.
@@ -386,11 +360,11 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
       {/* Technical legend info bar */}
       <div className="h-16 bg-coke-black border-t border-coke-border p-3 grid grid-cols-12 text-[9px] font-mono text-white select-none shrink-0 gap-2 items-center">
         <div className="col-span-5 border-r border-coke-border/40 pr-2">
-          <span className="text-coke-gray">TOTAL BUNDLE LIQUID VOLUME:</span>
-          <div className="text-xs font-extrabold text-coke-red tracking-tight">2.0 LITERS TOTAL (4 CANS BUNDLE)</div>
+          <span className="text-coke-gray">TOTAL BUNDLE CONTENT:</span>
+          <div className="text-xs font-extrabold text-coke-red tracking-tight">4 × {volumeLabel} ({productNoun.toUpperCase()} BUNDLE)</div>
         </div>
         <div className="col-span-4 border-r border-coke-border/40 px-1 text-center">
-          <button 
+          <button
             onClick={resetControls}
             className="px-2 py-1 text-[8.5px] bg-zinc-900 border border-zinc-805 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded cursor-pointer transition-all"
             title="Reset 3D camera and shader parameters"
@@ -399,8 +373,8 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
           </button>
         </div>
         <div className="col-span-3 text-right">
-          <span className="text-coke-gray">ESTIMATED NET FLUID WEIGHT:</span>
-          <div className="text-xs font-extrabold text-[#fff] tracking-tight">~ 2.14 KG (FLUID+METAL)</div>
+          <span className="text-coke-gray">PACK CONFIGURATION:</span>
+          <div className="text-xs font-extrabold text-[#fff] tracking-tight">4-UNIT VARIETY PACK</div>
         </div>
       </div>
 

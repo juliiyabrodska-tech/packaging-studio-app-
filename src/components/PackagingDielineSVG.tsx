@@ -1,5 +1,6 @@
 import React from 'react';
 import { PackagingSpecs } from '../types';
+import { getIndustry } from '../config/industries';
 
 interface SVGProps {
   specs: PackagingSpecs;
@@ -19,6 +20,10 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
     approvedSerhiy,
     approvedMaryna,
   } = specs;
+
+  const industry = getIndustry(specs.industry);
+  const productNoun = industry.productNoun;
+  const unitU = productNoun.toUpperCase();
 
   // Let's translate real physical cm to responsive drawing scale.
   // We want to ensure the entire unfolded layout (die-line) fits beautifully within our 800x520 viewport.
@@ -163,8 +168,8 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
           <circle cx={x1 + lPx * 0.75} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
           <circle cx={x3 + lPx * 0.25} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
           <circle cx={x3 + lPx * 0.75} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <text x={x1 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">BOM CAN 1-2</text>
-          <text x={x3 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">BOM CAN 3-4</text>
+          <text x={x1 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} 1-2`}</text>
+          <text x={x3 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} 3-4`}</text>
         </g>
 
         {/* --- DIMENSION ANNOTATIONS --- */}
@@ -242,7 +247,7 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
       </g>
     );
   } else if (packagingType === 'basket_handle') {
-    layoutTitle = 'BASKET CARRIER WITH HANDLE / FLUID BUNDLE CAD';
+    layoutTitle = 'BASKET CARRIER WITH HANDLE / BUNDLE CAD';
     // Basket carrier unfolded:
     // Symmetric panels that fold around a central tall handle sheet.
     // Center handle piece (width = L, height = H + handleExtension)
@@ -494,7 +499,7 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-[#000000] border-t border-coke-border grid grid-cols-4 select-none font-mono text-[9px] text-white">
         <div className="border-r border-coke-border p-1.5 flex flex-col justify-between">
           <div className="text-coke-gray text-[8px] uppercase">CUSTOMER BUILD:</div>
-          <div className="font-bold text-coke-red select-all truncate">CRAFT 4x0.5L MATTE</div>
+          <div className="font-bold text-coke-red select-all truncate">{`4 × ${industry.volumeLabel} ${unitU} PACK`}</div>
           <div className="text-[7px] text-coke-gray">DATE: {new Date().toLocaleDateString('en-US')}</div>
         </div>
         <div className="border-r border-coke-border p-1.5 flex flex-col justify-between">

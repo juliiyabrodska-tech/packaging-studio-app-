@@ -1,5 +1,9 @@
 import { IndustryId } from '../types';
 
+// Visual archetype of the contained retail unit, used by the 3D preview to
+// render the correct silhouette per business vertical.
+export type UnitShape = 'can' | 'bottle' | 'jar' | 'box' | 'pouch';
+
 // An IndustryProfile re-labels the whole studio for a given business vertical
 // WITHOUT changing the underlying geometry engine. It turns the app from a
 // single-purpose "4x0.5L beverage cans" tool into a configurable packaging
@@ -15,6 +19,7 @@ export interface IndustryProfile {
   variantNoun: string;      // e.g. "Flavor", "Shade", "SKU"
   variantLabels: [string, string, string, string]; // per-cell labels (A–D)
   defaultVariants: [string, string, string, string]; // default variant names
+  unitShape: UnitShape;     // silhouette rendered in the 3D preview
 }
 
 export const INDUSTRIES: IndustryProfile[] = [
@@ -34,6 +39,7 @@ export const INDUSTRIES: IndustryProfile[] = [
       '4. Flavor Gold (Can D):',
     ],
     defaultVariants: ['Cherry Berry Classic', 'Mad Lime-Mint', 'Forest Berries Zero', 'Caribbean Spicy Orange'],
+    unitShape: 'can',
   },
   {
     id: 'cosmetics',
@@ -51,6 +57,7 @@ export const INDUSTRIES: IndustryProfile[] = [
       '4. Shade (Unit D):',
     ],
     defaultVariants: ['Rose Nude', 'Coral Blush', 'Berry Matte', 'Golden Glow'],
+    unitShape: 'jar',
   },
   {
     id: 'food',
@@ -68,6 +75,7 @@ export const INDUSTRIES: IndustryProfile[] = [
       '4. Flavor (Unit D):',
     ],
     defaultVariants: ['Classic Original', 'Spicy Chili', 'Garden Herb', 'Sweet & Sour'],
+    unitShape: 'jar',
   },
   {
     id: 'ecommerce',
@@ -85,6 +93,7 @@ export const INDUSTRIES: IndustryProfile[] = [
       '4. SKU (Slot D):',
     ],
     defaultVariants: ['SKU-001', 'SKU-002', 'SKU-003', 'SKU-004'],
+    unitShape: 'box',
   },
   {
     id: 'pharma',
@@ -102,6 +111,7 @@ export const INDUSTRIES: IndustryProfile[] = [
       '4. Dosage (Unit D):',
     ],
     defaultVariants: ['250 mg', '500 mg', 'Forte', 'Junior'],
+    unitShape: 'bottle',
   },
   {
     id: 'generic',
@@ -119,6 +129,7 @@ export const INDUSTRIES: IndustryProfile[] = [
       '4. Variant (Slot D):',
     ],
     defaultVariants: ['Variant A', 'Variant B', 'Variant C', 'Variant D'],
+    unitShape: 'box',
   },
 ];
 
