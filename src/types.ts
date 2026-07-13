@@ -1,4 +1,4 @@
-export type PackagingType = 'closed_box_2x2' | 'basket_handle' | 'sleeve_pack';
+export type PackagingType = 'closed_box_2x2' | 'basket_handle' | 'sleeve_pack' | 'tube_carton' | 'pillow_pouch';
 
 // Business vertical the studio is configured for. Re-labels product/variant
 // terminology across the UI and exports so the tool is not beverage-specific.
@@ -21,11 +21,10 @@ export interface PackagingSpecs {
   colorsCount: number; // 1-8
   coatingOption: 'matte' | 'gloss' | 'uv_selective' | 'soft_touch' | 'none';
   
-  // Custom 4 flavors
-  flavor1: string;
-  flavor2: string;
-  flavor3: string;
-  flavor4: string;
+  // Retail unit assortment. Length always equals gridCols * gridRows.
+  variants: string[];
+  gridCols: number;
+  gridRows: number;
 
   // Additional components
   reinforcedBottom: boolean;
@@ -39,6 +38,9 @@ export interface PackagingSpecs {
   approvedOleh: boolean;
   approvedSerhiy: boolean;
   approvedMaryna: boolean;
+
+  // Optional uploaded artwork (data URL) applied as a texture on 3D units
+  artworkUrl: string;
 
   // Custom log
   notes: string;
@@ -60,11 +62,10 @@ export const INITIAL_SPECS: PackagingSpecs = {
   colorsCount: 5, // e.g. CMYK + Pantone Red
   coatingOption: 'matte',
   
-  // Varieties (4 flavors)
-  flavor1: 'Cherry Berry Classic',
-  flavor2: 'Mad Lime-Mint',
-  flavor3: 'Forest Berries Zero',
-  flavor4: 'Caribbean Spicy Orange',
+  // Varieties (assortment; 2x2 = 4 by default)
+  variants: ['Cherry Berry Classic', 'Mad Lime-Mint', 'Forest Berries Zero', 'Caribbean Spicy Orange'],
+  gridCols: 2,
+  gridRows: 2,
 
   reinforcedBottom: true,
   fingerHoles: true,
@@ -76,6 +77,8 @@ export const INITIAL_SPECS: PackagingSpecs = {
   approvedOleh: false,
   approvedSerhiy: false,
   approvedMaryna: false,
+
+  artworkUrl: '',
 
   notes: 'Experimental promo assortments for the summer festival. Custom red-black premium palette, premium matte board lamination.'
 };

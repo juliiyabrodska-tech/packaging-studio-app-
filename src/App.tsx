@@ -19,10 +19,13 @@ import {
   ExternalLink,
   Mail,
   Briefcase,
-  Send
+  Send,
+  Palette,
+  Upload,
+  X
 } from 'lucide-react';
 import { PackagingSpecs, INITIAL_SPECS, PackagingType, IndustryId } from './types';
-import { INDUSTRIES, getIndustry } from './config/industries';
+import { INDUSTRIES, getIndustry, GRID_LAYOUTS, buildVariants } from './config/industries';
 import { PackagingDielineSVG } from './components/PackagingDielineSVG';
 import { CansAssortmentPreview } from './components/CansAssortmentPreview';
 import { generateSpecsPDFChecklist, exportSpecsToCSV } from './utils/pdfGenerator';
@@ -76,10 +79,7 @@ export default function App() {
 
     return {
       ...data,
-      flavor1: flavorMap[data.flavor1.trim()] || data.flavor1,
-      flavor2: flavorMap[data.flavor2.trim()] || data.flavor2,
-      flavor3: flavorMap[data.flavor3.trim()] || data.flavor3,
-      flavor4: flavorMap[data.flavor4.trim()] || data.flavor4,
+      variants: (data.variants || []).map((v) => flavorMap[v.trim()] || v),
       notes: notesMap[data.notes.trim()] || data.notes,
     };
   };
@@ -92,6 +92,15 @@ export default function App() {
         const parsed = JSON.parse(saved);
         // Fallback for any missing properties in updated revisions
         const loaded = { ...INITIAL_SPECS, ...parsed };
+        // Migrate legacy fixed flavor1..4 fields into the variants array
+        if (!Array.isArray(parsed.variants)) {
+          const legacy = [parsed.flavor1, parsed.flavor2, parsed.flavor3, parsed.flavor4].filter(Boolean);
+          loaded.variants = legacy.length ? legacy : INITIAL_SPECS.variants;
+        }
+        if (!loaded.gridCols || !loaded.gridRows) {
+          loaded.gridCols = 2;
+          loaded.gridRows = 2;
+        }
         return migrateUkrainianToEnglish(loaded);
       }
     } catch (e) {
@@ -121,30 +130,44 @@ export default function App() {
   });
   const [showContactConfig, setShowContactConfig] = useState(false);
 
+  // White-label branding state (persisted separately from the design specs)
+  const [brandName, setBrandName] = useState(() => localStorage.getItem('packcraft_brand_name') || 'PackCraft 3D Studio');
+  const [brandInitials, setBrandInitials] = useState(() => localStorage.getItem('packcraft_brand_initials') || 'KR');
+  const [brandTagline, setBrandTagline] = useState(() => localStorage.getItem('packcraft_brand_tagline') || '');
+  const [brandAccent, setBrandAccent] = useState(() => localStorage.getItem('packcraft_brand_accent') || '#E61C24');
+  const [hideSupport, setHideSupport] = useState(() => localStorage.getItem('packcraft_hide_support') === '1');
+  const [showBrandConfig, setShowBrandConfig] = useState(false);
+
   // Status message for auto-saves
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
 
   // 2. Perform Auto-save on spec updates and compute auto-dimensions if lock is on
   useEffect(() => {
     setSaveStatus('saving');
-    
-    let currentSpecs = { ...specs };
-    
-    // Auto calculations based on standard 500ml (0.5L) can specs:
-    // Diameter = 6.63 cm, Height = 16.80 cm
-    // Carton needs a tiny bit of clearance tolerance so it folds comfortably around 2x2 grid
+
+    // Auto-computed carton dimensions from the unit size and pack grid:
+    // L scales with columns, W with rows, plus a small folding clearance.
     if (!isOverrideEnabled) {
-      const computedL = parseFloat((specs.canDiameter * 2 + 0.24).toFixed(2));
-      const computedW = parseFloat((specs.canDiameter * 2 + 0.24).toFixed(2));
+      const computedL = parseFloat((specs.canDiameter * specs.gridCols + 0.24).toFixed(2));
+      const computedW = parseFloat((specs.canDiameter * specs.gridRows + 0.24).toFixed(2));
       const computedH = parseFloat((specs.canHeight + 0.2).toFixed(2));
-      
-      currentSpecs.cartonLength = computedL;
-      currentSpecs.cartonWidth = computedW;
-      currentSpecs.cartonHeight = computedH;
+
+      if (computedL !== specs.cartonLength || computedW !== specs.cartonWidth || computedH !== specs.cartonHeight) {
+        // Push the computed dimensions into state so the blueprint, 3D preview
+        // and BOM all reflect them live. This re-runs the effect, which then
+        // persists on the settled pass (no infinite loop: values now match).
+        setSpecs(prev => ({ ...prev, cartonLength: computedL, cartonWidth: computedW, cartonHeight: computedH }));
+        return;
+      }
     }
 
     const timer = setTimeout(() => {
-      localStorage.setItem('my_packaging_better_specs', JSON.stringify(currentSpecs));
+      try {
+        localStorage.setItem('my_packaging_better_specs', JSON.stringify(specs));
+      } catch (e) {
+        // e.g. QuotaExceededError when a large artwork data URL is attached
+        console.warn('Could not persist specs to localStorage (quota?).', e);
+      }
       setSaveStatus('saved');
     }, 450);
 
@@ -159,6 +182,17 @@ export default function App() {
     }));
   };
 
+  // Read an uploaded image file into a data URL and store it on the spec
+  const handleArtworkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') updateSpec('artworkUrl', reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Preset selectors for quick reset/selection
   const applyPreset = (style: 'premium_gloss' | 'kraft_eco' | 'sleeper_pack') => {
     if (style === 'premium_gloss') {
@@ -171,10 +205,9 @@ export default function App() {
         printingMethod: 'offset',
         colorsCount: 6,
         coatingOption: 'soft_touch',
-        flavor1: 'Cherry Berry Classic',
-        flavor2: 'Crazy Lime-Mint',
-        flavor3: 'Forest Berries Zero',
-        flavor4: 'Caribbean Spicy Orange',
+        variants: ['Cherry Berry Classic', 'Crazy Lime-Mint', 'Forest Berries Zero', 'Caribbean Spicy Orange'],
+        gridCols: 2,
+        gridRows: 2,
         reinforcedBottom: true,
         fingerHoles: true,
         flavorDividers: true,
@@ -191,10 +224,9 @@ export default function App() {
         printingMethod: 'flexo',
         colorsCount: 2,
         coatingOption: 'none',
-        flavor1: 'Wild Raspberry Sugar Free',
-        flavor2: 'Apple Sidecrush',
-        flavor3: 'Orange Fizz',
-        flavor4: 'Classic Kvass Ale',
+        variants: ['Wild Raspberry Sugar Free', 'Apple Sidecrush', 'Orange Fizz', 'Classic Kvass Ale'],
+        gridCols: 2,
+        gridRows: 2,
         reinforcedBottom: true,
         fingerHoles: true,
         flavorDividers: false,
@@ -211,10 +243,9 @@ export default function App() {
         printingMethod: 'digital',
         colorsCount: 4,
         coatingOption: 'matte',
-        flavor1: 'Coffee-Fizz Booster',
-        flavor2: 'Watermelon Boom',
-        flavor3: 'Pineapple Splash',
-        flavor4: 'Ginger Fizz Crisp',
+        variants: ['Coffee-Fizz Booster', 'Watermelon Boom', 'Pineapple Splash', 'Ginger Fizz Crisp'],
+        gridCols: 2,
+        gridRows: 2,
         reinforcedBottom: false,
         fingerHoles: true,
         flavorDividers: false,
@@ -240,14 +271,29 @@ export default function App() {
   // default variant names so the assortment reads correctly out of the box.
   const handleIndustryChange = (id: IndustryId) => {
     const prof = getIndustry(id);
-    setSpecs(prev => ({
-      ...prev,
-      industry: id,
-      flavor1: prof.defaultVariants[0],
-      flavor2: prof.defaultVariants[1],
-      flavor3: prof.defaultVariants[2],
-      flavor4: prof.defaultVariants[3],
-    }));
+    setSpecs(prev => {
+      const count = prev.gridCols * prev.gridRows;
+      // Reseed the assortment from the new industry's defaults at current size
+      return { ...prev, industry: id, variants: buildVariants([], count, prof.defaultVariants, prof.variantNoun) };
+    });
+  };
+
+  // Change the pack layout, growing/shrinking the assortment to match.
+  const handleGridChange = (cols: number, rows: number) => {
+    setSpecs(prev => {
+      const prof = getIndustry(prev.industry);
+      const count = cols * rows;
+      return { ...prev, gridCols: cols, gridRows: rows, variants: buildVariants(prev.variants, count, prof.defaultVariants, prof.variantNoun) };
+    });
+  };
+
+  // Update a single assortment entry by index.
+  const updateVariant = (i: number, value: string) => {
+    setSpecs(prev => {
+      const next = [...prev.variants];
+      next[i] = value;
+      return { ...prev, variants: next };
+    });
   };
 
   // Checks if downloading is permitted. Sign-off is optional per project:
@@ -265,6 +311,13 @@ export default function App() {
       totalAreaSqCm = unfoldedWidth * unfoldedHeight;
     } else if (specs.packagingType === 'basket_handle') {
       totalAreaSqCm = (L * 1.5) * (H * 2.1);
+    } else if (specs.packagingType === 'tube_carton') {
+      // Unrolled cylindrical wall (circumference x height) + two round end caps
+      const circumference = Math.PI * L;
+      totalAreaSqCm = (1.6 + circumference) * H + 2 * Math.PI * (L / 2) ** 2;
+    } else if (specs.packagingType === 'pillow_pouch') {
+      // Two film panels (front/back) plus top & bottom seal allowance
+      totalAreaSqCm = 2 * L * H * 1.15;
     } else {
       totalAreaSqCm = (L * 2 + H * 2 + 1.6) * W;
     }
@@ -343,16 +396,16 @@ export default function App() {
       {/* GLOBAL HUD ROW (HEADLINE HEADER) */}
       <header className="min-h-16 w-full border-b border-coke-border bg-coke-black px-4 md:px-6 py-3 md:py-0 flex flex-col md:flex-row items-center justify-between gap-4 z-20">
         <div className="flex items-center space-x-3 w-full md:w-auto">
-          <div className="w-10 h-10 bg-coke-red rounded flex items-center justify-center border border-red-400/30 shrink-0">
-            <span className="font-mono font-extrabold text-[#fff] tracking-tighter text-xl">KR</span>
+          <div className="w-10 h-10 rounded flex items-center justify-center border border-white/20 shrink-0" style={{ backgroundColor: brandAccent }}>
+            <span className="font-mono font-extrabold text-[#fff] tracking-tighter text-xl">{brandInitials || 'KR'}</span>
           </div>
           <div>
             <h1 className="text-sm md:text-base font-bold uppercase tracking-tight text-white flex items-center gap-1.5 flex-wrap">
-              <span>PackCraft 3D Studio</span>
+              <span>{brandName || 'PackCraft 3D Studio'}</span>
               <span className="text-[10px] bg-coke-red-dim text-coke-red border border-coke-red/40 px-1.5 py-0.5 rounded font-mono font-bold shrink-0">V0.5 CAD</span>
             </h1>
             <p className="text-[10px] text-coke-gray font-mono uppercase tracking-widest sm:block hidden mt-0.5">
-              {industry.tagline}
+              {brandTagline || industry.tagline}
             </p>
           </div>
         </div>
@@ -483,6 +536,32 @@ export default function App() {
             </div>
           </div>
 
+          {/* PACKAGING ARTWORK UPLOAD */}
+          <div className="bg-coke-black rounded-lg border border-coke-border p-3 font-mono text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-coke-red font-bold uppercase tracking-wide">
+              <Upload className="w-4 h-4" />
+              <span>Packaging Artwork <span className="text-zinc-500 normal-case font-normal">(applied to 3D units)</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              {specs.artworkUrl ? (
+                <>
+                  <img src={specs.artworkUrl} alt="artwork preview" className="h-8 w-8 object-cover rounded border border-coke-border" />
+                  <button
+                    onClick={() => updateSpec('artworkUrl', '')}
+                    className="text-[10px] text-zinc-400 hover:text-coke-red flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" /> REMOVE
+                  </button>
+                </>
+              ) : (
+                <label className="cursor-pointer bg-coke-dark hover:bg-zinc-800 border border-coke-border rounded px-3 py-1.5 text-[10px] text-white flex items-center gap-1.5">
+                  <Upload className="w-3 h-3 text-coke-red" /> UPLOAD IMAGE
+                  <input type="file" accept="image/*" onChange={handleArtworkUpload} className="hidden" />
+                </label>
+              )}
+            </div>
+          </div>
+
         </section>
 
         {/* COLUMN RIGHT: CONTROL PARAMETERS BAR PANEL (12-cols spans 5) */}
@@ -524,6 +603,8 @@ export default function App() {
                   <option value="closed_box_2x2">Closed Box 2x2 (Show-Box type carton)</option>
                   <option value="basket_handle">Basket Carrier (Open holder with splitter partitions & handle)</option>
                   <option value="sleeve_pack">Tension Sleeve Wrap (Lightweight board wrapper)</option>
+                  <option value="tube_carton">Cylindrical Tube Carton (Unrolled wall + round caps)</option>
+                  <option value="pillow_pouch">Pillow Pouch (Flexible film with heat seals)</option>
                 </select>
               </div>
 
@@ -739,65 +820,45 @@ export default function App() {
             <div className="space-y-3 pb-3.5 border-b border-coke-border">
               <div className="flex items-center space-x-2 text-coke-red font-bold text-xs uppercase tracking-wider font-mono">
                 <Sliders className="w-3.5 h-3.5" />
-                <span>III. {industry.variantNoun.toUpperCase()}S (4 VARIETIES BUNDLE)</span>
+                <span>III. {industry.variantNoun.toUpperCase()}S ({specs.variants.length} VARIETIES)</span>
+              </div>
+
+              {/* Pack layout selector — drives the assortment size */}
+              <div className="flex flex-col space-y-1">
+                <label className="text-[10px] text-coke-gray font-mono uppercase">Pack Layout (columns × rows):</label>
+                <select
+                  value={`${specs.gridCols}x${specs.gridRows}`}
+                  onChange={(e) => { const [c, r] = e.target.value.split('x').map(Number); handleGridChange(c, r); }}
+                  className="bg-coke-dark border border-coke-border text-white text-xs rounded p-2 focus:border-coke-red focus:outline-none"
+                  id="select-grid-layout"
+                >
+                  {GRID_LAYOUTS.map((g) => (
+                    <option key={`${g.cols}x${g.rows}`} value={`${g.cols}x${g.rows}`}>{g.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-red-400 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                    <span>{industry.variantLabels[0]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor1}
-                    onChange={(e) => updateSpec('flavor1', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-1"
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-emerald-400 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>{industry.variantLabels[1]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor2}
-                    onChange={(e) => updateSpec('flavor2', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-2"
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-purple-400 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                    <span>{industry.variantLabels[2]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor3}
-                    onChange={(e) => updateSpec('flavor3', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-3"
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-amber-500 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                    <span>{industry.variantLabels[3]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor4}
-                    onChange={(e) => updateSpec('flavor4', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-4"
-                  />
-                </div>
+                {specs.variants.map((v, i) => {
+                  const dot = ['bg-red-600', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500'][i % 4];
+                  const txt = ['text-red-400', 'text-emerald-400', 'text-purple-400', 'text-amber-500'][i % 4];
+                  const label = industry.variantLabels[i] || `${i + 1}. ${industry.variantNoun} (${String.fromCharCode(65 + i)})`;
+                  return (
+                    <div key={i} className="flex flex-col space-y-0.5">
+                      <label className={`text-[10px] ${txt} font-mono flex items-center space-x-1`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${dot}`}></span>
+                        <span className="truncate">{label}</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={v}
+                        onChange={(e) => updateVariant(i, e.target.value)}
+                        className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
+                        id={`input-variant-${i}`}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1036,6 +1097,62 @@ export default function App() {
                 <span>Reset to standard 0.5L factory specifications</span>
               </button>
 
+              {/* BRAND / WHITE-LABEL PANEL */}
+              <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#161616] rounded-lg border border-white/10 space-y-3 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-white font-bold text-xs uppercase tracking-wider font-mono">
+                    <Palette className="w-4 h-4 shrink-0" style={{ color: brandAccent }} />
+                    <span>Brand / White-Label</span>
+                  </div>
+                  <button
+                    onClick={() => setShowBrandConfig(!showBrandConfig)}
+                    className="text-[9px] font-mono text-zinc-500 hover:text-white underline transition-colors cursor-pointer bg-transparent border-0"
+                  >
+                    {showBrandConfig ? 'HIDE' : 'CONFIGURE BRAND'}
+                  </button>
+                </div>
+                {showBrandConfig && (
+                  <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-2.5">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Brand Name:</label>
+                        <input type="text" value={brandName}
+                          onChange={(e) => { setBrandName(e.target.value); localStorage.setItem('packcraft_brand_name', e.target.value); }}
+                          className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-white/40 focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Logo:</label>
+                        <input type="text" maxLength={3} value={brandInitials}
+                          onChange={(e) => { const v = e.target.value.toUpperCase(); setBrandInitials(v); localStorage.setItem('packcraft_brand_initials', v); }}
+                          className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-white/40 focus:outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Tagline (blank = industry default):</label>
+                      <input type="text" value={brandTagline}
+                        onChange={(e) => { setBrandTagline(e.target.value); localStorage.setItem('packcraft_brand_tagline', e.target.value); }}
+                        placeholder={industry.tagline}
+                        className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-white/40 focus:outline-none" />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase flex items-center gap-2">
+                        <span>Accent color:</span>
+                        <input type="color" value={brandAccent}
+                          onChange={(e) => { setBrandAccent(e.target.value); localStorage.setItem('packcraft_brand_accent', e.target.value); }}
+                          className="w-8 h-6 bg-transparent border border-zinc-700 rounded cursor-pointer" />
+                      </label>
+                      <label className="text-[9px] text-zinc-300 font-mono flex items-center gap-1.5 cursor-pointer select-none">
+                        <input type="checkbox" checked={hideSupport}
+                          onChange={(e) => { setHideSupport(e.target.checked); localStorage.setItem('packcraft_hide_support', e.target.checked ? '1' : '0'); }}
+                          className="accent-white" />
+                        <span>Hide support &amp; business blocks</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {!hideSupport && (<>
               {/* BUY ME A COFFEE WIDGET */}
               <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#1a1a1f] rounded-lg border border-yellow-500/20 space-y-3 shadow-md">
                 <div className="flex items-center justify-between">
@@ -1194,6 +1311,7 @@ export default function App() {
                   </a>
                 </div>
               </div>
+              </>)}
 
             </div>
 
