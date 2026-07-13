@@ -112,10 +112,7 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     printingMethod,
     colorsCount,
     coatingOption,
-    flavor1,
-    flavor2,
-    flavor3,
-    flavor4,
+    variants,
     reinforcedBottom,
     fingerHoles,
     flavorDividers,
@@ -276,6 +273,8 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
       case 'closed_box_2x2': return 'Closed Box 2x2';
       case 'basket_handle': return 'Basket Carrier with Handle';
       case 'sleeve_pack': return 'Tight Sleeve Wrapper';
+      case 'tube_carton': return 'Cylindrical Tube Carton';
+      case 'pillow_pouch': return 'Pillow Pouch (Flexible Film)';
       default: return type;
     }
   };
@@ -372,15 +371,23 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(230, 28, 36);
-  doc.text(`3. CUSTOM ${variantNoun.toUpperCase()} BUNDLING SPECIFICATIONS (4 VARIETIES)`, 12, currentY);
+  doc.text(`3. CUSTOM ${variantNoun.toUpperCase()} BUNDLING SPECIFICATIONS (${variants.length} VARIETIES)`, 12, currentY);
 
-  const flavorData = [
+  const accentNames = ['Brand Red Accent (Dark Red)', 'Electric Lime Tonic (Green)', 'Cosmos Berry Purple (Violet)', 'Rich Amber Orange (Gold)'];
+  // Show up to 4 rows here to preserve the fixed page layout; the full list is
+  // always exported in the CSV.
+  const shown = variants.slice(0, 4);
+  const flavorData: string[][] = [
     [`${productNoun} ID`, `Assortment ${variantNoun} Name`, 'Tag Label Color Accent'],
-    [`${productNoun} A`, cleanCyrillic(flavor1) || `${variantNoun} A`, 'Brand Red Accent (Dark Red)'],
-    [`${productNoun} B`, cleanCyrillic(flavor2) || `${variantNoun} B`, 'Electric Lime Tonic (Green)'],
-    [`${productNoun} C`, cleanCyrillic(flavor3) || `${variantNoun} C`, 'Cosmos Berry Purple (Violet)'],
-    [`${productNoun} D`, cleanCyrillic(flavor4) || `${variantNoun} D`, 'Rich Amber Orange (Gold)'],
+    ...shown.map((v, i) => [
+      `${productNoun} ${String.fromCharCode(65 + i)}`,
+      cleanCyrillic(v) || `${variantNoun} ${String.fromCharCode(65 + i)}`,
+      accentNames[i % 4],
+    ]),
   ];
+  if (variants.length > 4) {
+    flavorData.push(['…', `(+${variants.length - 4} more — see CSV export)`, '—']);
+  }
 
   tableY = currentY + 3;
   flavorData.forEach((row, rowIndex) => {
@@ -597,6 +604,50 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     doc.setLineDashPattern([1.5, 1.5], 0);
     doc.line(bx - lMm/2, by, bx + lMm/2, by);
 
+  } else if (packagingType === 'tube_carton') {
+    // Cylindrical tube: unrolled wall rectangle + two round end caps
+    const circumference = Math.PI * cartonLength;
+    const bodyW = Math.min(150, circumference * 3);
+    const hMm = Math.min(120, cartonHeight * 4);
+    const capR = Math.min(22, (cartonLength * 3) / 2);
+    const sx = cxMm - bodyW / 2;
+    const sy = cyMm - hMm / 2;
+
+    doc.setDrawColor(230, 28, 36);
+    doc.setLineWidth(0.4);
+    doc.rect(sx, sy, bodyW, hMm);
+
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.2);
+    doc.setLineDashPattern([1.5, 1], 0);
+    [0.25, 0.5, 0.75].forEach((f) => doc.line(sx + bodyW * f, sy, sx + bodyW * f, sy + hMm));
+    doc.setLineDashPattern([], 0);
+
+    doc.setDrawColor(230, 28, 36);
+    doc.setLineWidth(0.4);
+    doc.circle(sx + bodyW * 0.28, sy - capR - 3, capR);
+    doc.circle(sx + bodyW * 0.72, sy + hMm + capR + 3, capR);
+  } else if (packagingType === 'pillow_pouch') {
+    // Pillow pouch: rounded film panel with top & bottom heat-seal strips
+    const wMm = Math.min(150, cartonLength * 5);
+    const hMm = Math.min(150, cartonHeight * 4);
+    const sx = cxMm - wMm / 2;
+    const sy = cyMm - hMm / 2;
+    const seal = Math.min(8, hMm * 0.14);
+
+    doc.setDrawColor(230, 28, 36);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(sx, sy, wMm, hMm, 3, 3);
+
+    doc.setFillColor(245, 220, 222);
+    doc.rect(sx, sy, wMm, seal, 'F');
+    doc.rect(sx, sy + hMm - seal, wMm, seal, 'F');
+
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.2);
+    doc.setLineDashPattern([1.5, 1], 0);
+    doc.line(sx + wMm / 2, sy, sx + wMm / 2, sy + hMm);
+    doc.setLineDashPattern([], 0);
   } else {
     // Sleeve pack template
     const lMm = cartonLength * 4;
@@ -690,10 +741,7 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
     printingMethod,
     colorsCount,
     coatingOption,
-    flavor1,
-    flavor2,
-    flavor3,
-    flavor4,
+    variants,
     reinforcedBottom,
     fingerHoles,
     flavorDividers,
@@ -714,8 +762,9 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
   const rows = [
     ['Project Title', 'PackCraft 3D Studio', '-', 'Technical assembly specification'],
     ['Unique Version ID', 'CAD-MP-4X500L-2026', '-', 'Generative model code'],
-    ['Structure Type', packagingType === 'closed_box_2x2' ? 'Closed Box 2x2' : packagingType === 'basket_handle' ? 'Basket Carrier with Handle' : 'Tension Sleeve Wrapper', '-', 'Base engineering profile'],
-    ['Pack Unit Volume', `4 x ${industry.volumeLabel}`, '-', 'Per-unit content in variety pack'],
+    ['Structure Type', packagingType === 'closed_box_2x2' ? 'Closed Box 2x2' : packagingType === 'basket_handle' ? 'Basket Carrier with Handle' : packagingType === 'tube_carton' ? 'Cylindrical Tube Carton' : packagingType === 'pillow_pouch' ? 'Pillow Pouch (Flexible Film)' : 'Tension Sleeve Wrapper', '-', 'Base engineering profile'],
+    ['Pack Layout', `${specs.gridCols} x ${specs.gridRows}`, 'units', `Assortment of ${variants.length} units`],
+    ['Pack Unit Volume', `${variants.length} x ${industry.volumeLabel}`, '-', 'Per-unit content in variety pack'],
     [`${productNoun} Container Material`, containerMaterial === 'aluminium' ? 'Aluminum' : containerMaterial === 'glass' ? 'Glass' : 'PET / Plastic', '-', 'Retail container unit'],
     [`${productNoun} Outer Diameter/Width`, canDiameter.toString(), 'cm', 'Diameter clearing limit'],
     [`${productNoun} Height`, canHeight.toString(), 'cm', 'Envelope height of pack'],
@@ -728,10 +777,7 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
     ['Primary Printing Method', printingMethod === 'offset' ? 'Litho Offset Printing' : printingMethod === 'flexo' ? 'High Speed Flexography' : 'Digital Latex Printing', '-', 'Ink transfer technology'],
     ['Colors Count', colorsCount.toString(), 'Pantone/CMYK', 'Inks configuration count'],
     ['Finishing Protective Layer', coatingOption === 'matte' ? 'Protective Matte Coating' : coatingOption === 'gloss' ? 'Gloss Coating' : coatingOption === 'uv_selective' ? 'Spot UV Selective' : 'Soft-Touch Silk-Lamination', '-', 'Surface finishing option'],
-    [`Assortment ${variantNoun} 1 (Red)`, flavor1, '-', `Contents, ${productNoun} 1`],
-    [`Assortment ${variantNoun} 2 (Green)`, flavor2, '-', `Contents, ${productNoun} 2`],
-    [`Assortment ${variantNoun} 3 (Violet)`, flavor3, '-', `Contents, ${productNoun} 3`],
-    [`Assortment ${variantNoun} 4 (Gold)`, flavor4, '-', `Contents, ${productNoun} 4`],
+    ...variants.map((v, i) => [`Assortment ${variantNoun} ${i + 1}`, v, '-', `Contents, ${productNoun} ${i + 1}`]),
     ['Reinforced Double Base', reinforcedBottom ? 'ACTIVE / YES' : 'NO', '-', 'Reinforcement under can cells'],
     ['Finger Carry Holes', fingerHoles ? 'ACTIVE / YES' : 'NO', '-', 'Cutout flaps on top panel'],
     ['Internal Cell Dividers', flavorDividers ? 'ACTIVE / YES' : 'NO', '-', 'Individual partition cardboards'],

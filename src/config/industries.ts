@@ -137,3 +137,19 @@ export const DEFAULT_INDUSTRY_ID: IndustryId = 'beverage';
 
 export const getIndustry = (id: IndustryId | undefined): IndustryProfile =>
   INDUSTRIES.find((i) => i.id === id) || INDUSTRIES[0];
+
+// Grid layouts offered for the assortment (columns x rows). Order matters for
+// the selector.
+export const GRID_LAYOUTS: { cols: number; rows: number; label: string }[] = [
+  { cols: 1, rows: 2, label: '1 × 2 (2 units)' },
+  { cols: 1, rows: 3, label: '1 × 3 (3 units)' },
+  { cols: 2, rows: 2, label: '2 × 2 (4 units)' },
+  { cols: 2, rows: 3, label: '2 × 3 (6 units)' },
+  { cols: 3, rows: 3, label: '3 × 3 (9 units)' },
+];
+
+// Resize an assortment to `count` entries, preserving existing names and
+// filling any new slots from `base` defaults (then a generic noun fallback).
+export const buildVariants = (existing: string[], count: number, base: string[], noun: string): string[] =>
+  Array.from({ length: count }, (_, i) => existing[i] ?? base[i] ?? `${noun} ${i + 1}`);
+

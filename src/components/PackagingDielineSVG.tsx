@@ -24,6 +24,9 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
   const industry = getIndustry(specs.industry);
   const productNoun = industry.productNoun;
   const unitU = productNoun.toUpperCase();
+  const cols = specs.gridCols || 2;
+  const rows = specs.gridRows || 2;
+  const count = cols * rows;
 
   // Let's translate real physical cm to responsive drawing scale.
   // We want to ensure the entire unfolded layout (die-line) fits beautifully within our 800x520 viewport.
@@ -161,15 +164,17 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
         <path d={`M ${xEnd},${yT} L ${xEnd},${yB}`} stroke={cutLineColor} strokeWidth="1.5" fill="none" />
         <path d={`M ${x4},${yB} L ${x4 + 8},${yB + flapDepth * 0.77} L ${xEnd - 8},${yB + flapDepth * 0.77} L ${xEnd},${yB}`} stroke={cutLineColor} strokeWidth="1.5" fill="none" />
 
-        {/* Circle placements of 4 interior cans represented for scale */}
+        {/* Unit footprint map (cols x rows) drawn on the front panel for scale */}
         <g stroke="#ffffff" strokeDasharray="3 4" strokeOpacity="0.25" fill="none">
-          {/* Can position indicator rings underneath Panel 1 and Panel 3 */}
-          <circle cx={x1 + lPx * 0.25} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <circle cx={x1 + lPx * 0.75} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <circle cx={x3 + lPx * 0.25} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <circle cx={x3 + lPx * 0.75} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <text x={x1 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} 1-2`}</text>
-          <text x={x3 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} 3-4`}</text>
+          {Array.from({ length: rows }).map((_, r) =>
+            Array.from({ length: cols }).map((_, c) => {
+              const cxp = x1 + lPx * ((c + 0.5) / cols);
+              const cyp = yT + hPx * ((r + 0.5) / rows);
+              const rr = Math.min(lPx / cols, hPx / rows) * 0.32;
+              return <circle key={`fp-${r}-${c}`} cx={cxp} cy={cyp} r={rr} />;
+            })
+          )}
+          <text x={x1 + lPx * 0.5} y={yT + hPx - 6} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} ×${count} (${cols}×${rows})`}</text>
         </g>
 
         {/* --- DIMENSION ANNOTATIONS --- */}
@@ -342,7 +347,7 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
         </text>
       </g>
     );
-  } else {
+  } else if (packagingType === 'sleeve_pack') {
     layoutTitle = 'TENSION SLEEVE WRAP / CARDBOARD SLEEVE TEMPLATE';
     // Sleeve pack unfolded: just 4 horizontal panels.
     // Length -> Height -> Length -> Height + Glue Flap.
@@ -432,6 +437,91 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
         <text x={x4 + hPx / 2} y={yB - 12} fill="#ffffff" fillOpacity="0.4" fontSize="10" fontFamily="monospace" textAnchor="middle">WALL PANEL 2</text>
       </g>
     );
+  } else if (packagingType === 'tube_carton') {
+    layoutTitle = 'CYLINDRICAL TUBE CARTON / UNROLLED WALL CAD';
+    // Body = circumference (π·D) unrolled × H, plus two round end caps.
+    const circumference = Math.PI * L;
+    const totalWidthCm = G + circumference;
+    const totalHeightCm = H + L * 1.4;
+    const scale = Math.min(600 / totalWidthCm, 300 / totalHeightCm);
+
+    const gPx = G * scale;
+    const bodyW = circumference * scale;
+    const hPx = H * scale;
+    const capR = (L / 2) * scale;
+
+    const startX = 400 - (gPx + bodyW) / 2;
+    const yT = 250 - hPx / 2;
+    const yB = yT + hPx;
+    const x0 = startX;
+    const x1 = x0 + gPx;
+    const xEnd = x1 + bodyW;
+    const midY = (yT + yB) / 2;
+
+    svgContent = (
+      <g>
+        {/* Unrolled cylindrical wall */}
+        <rect x={x1} y={yT} width={bodyW} height={hPx} fill="#1c1c1e" fillOpacity="0.45" stroke={cutLineColor} strokeWidth="1.5" />
+        {/* Glue seam flap */}
+        <polygon points={`${x0},${yT + 10} ${x1},${yT} ${x1},${yB} ${x0},${yB - 10}`} fill="#2a1113" fillOpacity="0.5" stroke={cutLineColor} strokeWidth="1.2" />
+        <text x={x0 + gPx / 2} y={midY} fill="#E61C24" fontSize="9" fontFamily="monospace" textAnchor="middle" transform={`rotate(-90, ${x0 + gPx / 2}, ${midY})`}>GLUE SEAM</text>
+
+        {/* Quarter-wrap crease marks */}
+        {[0.25, 0.5, 0.75].map((f, i) => (
+          <line key={`wrap-${i}`} x1={x1 + bodyW * f} y1={yT} x2={x1 + bodyW * f} y2={yB} stroke={foldLineColor} strokeDasharray="5 3" strokeWidth="1" />
+        ))}
+
+        {/* Round end caps (lids) top & bottom */}
+        <circle cx={x1 + bodyW * 0.28} cy={yT - capR - 8} r={capR} fill="#1c1c1e" fillOpacity="0.4" stroke={cutLineColor} strokeWidth="1.5" />
+        <circle cx={x1 + bodyW * 0.72} cy={yB + capR + 8} r={capR} fill="#1c1c1e" fillOpacity="0.4" stroke={cutLineColor} strokeWidth="1.5" />
+        <line x1={x1 + bodyW * 0.28} y1={yT} x2={x1 + bodyW * 0.28} y2={yT - 8} stroke={foldLineColor} strokeDasharray="4 2" />
+        <line x1={x1 + bodyW * 0.72} y1={yB} x2={x1 + bodyW * 0.72} y2={yB + 8} stroke={foldLineColor} strokeDasharray="4 2" />
+        <text x={x1 + bodyW * 0.28} y={yT - capR - 6} fill="#ffffff" fillOpacity="0.4" fontSize="8" fontFamily="monospace" textAnchor="middle">TOP CAP</text>
+        <text x={x1 + bodyW * 0.72} y={yB + capR + 10} fill="#ffffff" fillOpacity="0.4" fontSize="8" fontFamily="monospace" textAnchor="middle">BASE CAP</text>
+
+        {/* Dimensions */}
+        <text x={(x1 + xEnd) / 2} y={yT - capR * 2 - 14} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle">{`⌀ = ${L.toFixed(1)} cm  ·  CIRC = ${circumference.toFixed(1)} cm`}</text>
+        <text x={x1 - 12} y={midY} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle" transform={`rotate(-90, ${x1 - 12}, ${midY})`}>{`H = ${H.toFixed(1)} cm`}</text>
+        <text x={(x1 + xEnd) / 2} y={midY + 4} fill="#ffffff" fillOpacity="0.35" fontSize="10" fontFamily="monospace" textAnchor="middle">{`TUBE BODY — ${unitU} ×${count}`}</text>
+      </g>
+    );
+  } else if (packagingType === 'pillow_pouch') {
+    layoutTitle = 'PILLOW POUCH / FLEXIBLE FILM SEAL TEMPLATE';
+    const totalWidthCm = L * 1.15;
+    const totalHeightCm = H * 1.3;
+    const scale = Math.min(560 / totalWidthCm, 320 / totalHeightCm);
+
+    const wPx = L * scale;
+    const hPx = H * scale;
+    const x0 = 400 - wPx / 2;
+    const xEnd = x0 + wPx;
+    const yT = 250 - hPx / 2;
+    const yB = yT + hPx;
+    const midX = (x0 + xEnd) / 2;
+    const midY = (yT + yB) / 2;
+    const seal = Math.min(18, hPx * 0.14);
+
+    svgContent = (
+      <g>
+        {/* Pouch body outline */}
+        <rect x={x0} y={yT} width={wPx} height={hPx} rx={10} fill="#1c1c1e" fillOpacity="0.45" stroke={cutLineColor} strokeWidth="1.5" />
+        {/* Heat-seal strips top & bottom */}
+        <rect x={x0} y={yT} width={wPx} height={seal} fill="#E61C24" fillOpacity="0.12" stroke={foldLineColor} strokeDasharray="3 2" strokeWidth="0.8" />
+        <rect x={x0} y={yB - seal} width={wPx} height={seal} fill="#E61C24" fillOpacity="0.12" stroke={foldLineColor} strokeDasharray="3 2" strokeWidth="0.8" />
+        {/* Center back-seam fold */}
+        <line x1={midX} y1={yT} x2={midX} y2={yB} stroke={foldLineColor} strokeDasharray="6 3" strokeWidth="1" />
+        {/* Tear notch on the right edge */}
+        <path d={`M ${xEnd},${yT + seal + 10} l -9,4 l 9,4`} fill="none" stroke={cutLineColor} strokeWidth="1.5" />
+
+        <text x={midX} y={yT + seal / 2 + 3} fill="#E61C24" fontSize="8" fontFamily="monospace" textAnchor="middle">TOP HEAT SEAL</text>
+        <text x={midX} y={yB - seal / 2 + 3} fill="#E61C24" fontSize="8" fontFamily="monospace" textAnchor="middle">BOTTOM SEAL</text>
+        <text x={midX} y={midY} fill="#ffffff" fillOpacity="0.35" fontSize="10" fontFamily="monospace" textAnchor="middle">{`${unitU} ×${count} INSIDE`}</text>
+
+        {/* Dimensions */}
+        <text x={midX} y={yT - 10} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle">{`W = ${L.toFixed(1)} cm`}</text>
+        <text x={x0 - 12} y={midY} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle" transform={`rotate(-90, ${x0 - 12}, ${midY})`}>{`H = ${H.toFixed(1)} cm`}</text>
+      </g>
+    );
   }
 
   // Generate some subtle blueprint background details: scale lines, calibration crosses
@@ -499,7 +589,7 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-[#000000] border-t border-coke-border grid grid-cols-4 select-none font-mono text-[9px] text-white">
         <div className="border-r border-coke-border p-1.5 flex flex-col justify-between">
           <div className="text-coke-gray text-[8px] uppercase">CUSTOMER BUILD:</div>
-          <div className="font-bold text-coke-red select-all truncate">{`4 × ${industry.volumeLabel} ${unitU} PACK`}</div>
+          <div className="font-bold text-coke-red select-all truncate">{`${count} × ${industry.volumeLabel} ${unitU} PACK`}</div>
           <div className="text-[7px] text-coke-gray">DATE: {new Date().toLocaleDateString('en-US')}</div>
         </div>
         <div className="border-r border-coke-border p-1.5 flex flex-col justify-between">
