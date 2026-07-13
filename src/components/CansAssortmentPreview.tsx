@@ -133,6 +133,17 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
   const rows = specs.gridRows || 2;
   const artwork = specs.artworkUrl || undefined;
 
+  const pkgLabel = (upper: boolean) => {
+    switch (packagingType) {
+      case 'closed_box_2x2': return upper ? 'CLOSED BOX' : 'Closed Box 2x2';
+      case 'basket_handle': return upper ? 'CARRIER WITH HANDLE' : 'Carrier with Handle';
+      case 'sleeve_pack': return upper ? 'SLEEVE WRAP' : 'Tight Sleeve Wrap';
+      case 'tube_carton': return upper ? 'TUBE CARTON' : 'Cylindrical Tube Carton';
+      case 'pillow_pouch': return upper ? 'PILLOW POUCH' : 'Pillow Pouch';
+      default: return upper ? 'PACKAGING' : 'Packaging';
+    }
+  };
+
   // Multi-state configuration for ultimate Upwork portfolio impact
   const [rotation, setRotation] = useState<number>(-5);
   const [tilt, setTilt] = useState<number>(6);
@@ -332,7 +343,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
             )}
 
             <div className="border-t border-dashed border-white/30 text-[8px] font-mono text-white/70 text-center uppercase py-0.5 tracking-wider bg-black/80 rounded">
-              {packagingType === 'closed_box_2x2' ? 'CLOSED BOX' : packagingType === 'basket_handle' ? 'CARRIER WITH HANDLE' : 'SLEEVE WRAP'} • {canDiameter}x{canHeight} CM BUNDLE
+              {pkgLabel(true)} • {canDiameter}x{canHeight} CM BUNDLE
             </div>
           </div>
 
@@ -352,7 +363,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
           <div className="text-center text-[10px] text-zinc-400 font-mono mt-4 leading-normal select-none">
             This interactive 3D simulation depicts the precise layout of <span className="text-coke-red font-bold">{names.length} × {volumeLabel}</span> {productNoun.toLowerCase()}s inside the selected packaging architecture:{' '}
             <span className="text-white font-semibold underline underline-offset-2 decoration-coke-red">
-              {packagingType === 'closed_box_2x2' ? 'Closed Box 2x2' : packagingType === 'basket_handle' ? 'Carrier with Handle' : 'Tight Sleeve Wrap'}
+              {pkgLabel(false)}
             </span>.
           </div>
 

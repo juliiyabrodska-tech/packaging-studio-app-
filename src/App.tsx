@@ -311,6 +311,13 @@ export default function App() {
       totalAreaSqCm = unfoldedWidth * unfoldedHeight;
     } else if (specs.packagingType === 'basket_handle') {
       totalAreaSqCm = (L * 1.5) * (H * 2.1);
+    } else if (specs.packagingType === 'tube_carton') {
+      // Unrolled cylindrical wall (circumference x height) + two round end caps
+      const circumference = Math.PI * L;
+      totalAreaSqCm = (1.6 + circumference) * H + 2 * Math.PI * (L / 2) ** 2;
+    } else if (specs.packagingType === 'pillow_pouch') {
+      // Two film panels (front/back) plus top & bottom seal allowance
+      totalAreaSqCm = 2 * L * H * 1.15;
     } else {
       totalAreaSqCm = (L * 2 + H * 2 + 1.6) * W;
     }
@@ -596,6 +603,8 @@ export default function App() {
                   <option value="closed_box_2x2">Closed Box 2x2 (Show-Box type carton)</option>
                   <option value="basket_handle">Basket Carrier (Open holder with splitter partitions & handle)</option>
                   <option value="sleeve_pack">Tension Sleeve Wrap (Lightweight board wrapper)</option>
+                  <option value="tube_carton">Cylindrical Tube Carton (Unrolled wall + round caps)</option>
+                  <option value="pillow_pouch">Pillow Pouch (Flexible film with heat seals)</option>
                 </select>
               </div>
 

@@ -347,7 +347,7 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
         </text>
       </g>
     );
-  } else {
+  } else if (packagingType === 'sleeve_pack') {
     layoutTitle = 'TENSION SLEEVE WRAP / CARDBOARD SLEEVE TEMPLATE';
     // Sleeve pack unfolded: just 4 horizontal panels.
     // Length -> Height -> Length -> Height + Glue Flap.
@@ -435,6 +435,91 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
         <text x={x2 + hPx / 2} y={yB - 12} fill="#ffffff" fillOpacity="0.4" fontSize="10" fontFamily="monospace" textAnchor="middle">WALL PANEL 1</text>
         <text x={x3 + lPx / 2} y={yB - 12} fill="#ffffff" fillOpacity="0.4" fontSize="10" fontFamily="monospace" textAnchor="middle">TOP PANEL</text>
         <text x={x4 + hPx / 2} y={yB - 12} fill="#ffffff" fillOpacity="0.4" fontSize="10" fontFamily="monospace" textAnchor="middle">WALL PANEL 2</text>
+      </g>
+    );
+  } else if (packagingType === 'tube_carton') {
+    layoutTitle = 'CYLINDRICAL TUBE CARTON / UNROLLED WALL CAD';
+    // Body = circumference (π·D) unrolled × H, plus two round end caps.
+    const circumference = Math.PI * L;
+    const totalWidthCm = G + circumference;
+    const totalHeightCm = H + L * 1.4;
+    const scale = Math.min(600 / totalWidthCm, 300 / totalHeightCm);
+
+    const gPx = G * scale;
+    const bodyW = circumference * scale;
+    const hPx = H * scale;
+    const capR = (L / 2) * scale;
+
+    const startX = 400 - (gPx + bodyW) / 2;
+    const yT = 250 - hPx / 2;
+    const yB = yT + hPx;
+    const x0 = startX;
+    const x1 = x0 + gPx;
+    const xEnd = x1 + bodyW;
+    const midY = (yT + yB) / 2;
+
+    svgContent = (
+      <g>
+        {/* Unrolled cylindrical wall */}
+        <rect x={x1} y={yT} width={bodyW} height={hPx} fill="#1c1c1e" fillOpacity="0.45" stroke={cutLineColor} strokeWidth="1.5" />
+        {/* Glue seam flap */}
+        <polygon points={`${x0},${yT + 10} ${x1},${yT} ${x1},${yB} ${x0},${yB - 10}`} fill="#2a1113" fillOpacity="0.5" stroke={cutLineColor} strokeWidth="1.2" />
+        <text x={x0 + gPx / 2} y={midY} fill="#E61C24" fontSize="9" fontFamily="monospace" textAnchor="middle" transform={`rotate(-90, ${x0 + gPx / 2}, ${midY})`}>GLUE SEAM</text>
+
+        {/* Quarter-wrap crease marks */}
+        {[0.25, 0.5, 0.75].map((f, i) => (
+          <line key={`wrap-${i}`} x1={x1 + bodyW * f} y1={yT} x2={x1 + bodyW * f} y2={yB} stroke={foldLineColor} strokeDasharray="5 3" strokeWidth="1" />
+        ))}
+
+        {/* Round end caps (lids) top & bottom */}
+        <circle cx={x1 + bodyW * 0.28} cy={yT - capR - 8} r={capR} fill="#1c1c1e" fillOpacity="0.4" stroke={cutLineColor} strokeWidth="1.5" />
+        <circle cx={x1 + bodyW * 0.72} cy={yB + capR + 8} r={capR} fill="#1c1c1e" fillOpacity="0.4" stroke={cutLineColor} strokeWidth="1.5" />
+        <line x1={x1 + bodyW * 0.28} y1={yT} x2={x1 + bodyW * 0.28} y2={yT - 8} stroke={foldLineColor} strokeDasharray="4 2" />
+        <line x1={x1 + bodyW * 0.72} y1={yB} x2={x1 + bodyW * 0.72} y2={yB + 8} stroke={foldLineColor} strokeDasharray="4 2" />
+        <text x={x1 + bodyW * 0.28} y={yT - capR - 6} fill="#ffffff" fillOpacity="0.4" fontSize="8" fontFamily="monospace" textAnchor="middle">TOP CAP</text>
+        <text x={x1 + bodyW * 0.72} y={yB + capR + 10} fill="#ffffff" fillOpacity="0.4" fontSize="8" fontFamily="monospace" textAnchor="middle">BASE CAP</text>
+
+        {/* Dimensions */}
+        <text x={(x1 + xEnd) / 2} y={yT - capR * 2 - 14} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle">{`⌀ = ${L.toFixed(1)} cm  ·  CIRC = ${circumference.toFixed(1)} cm`}</text>
+        <text x={x1 - 12} y={midY} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle" transform={`rotate(-90, ${x1 - 12}, ${midY})`}>{`H = ${H.toFixed(1)} cm`}</text>
+        <text x={(x1 + xEnd) / 2} y={midY + 4} fill="#ffffff" fillOpacity="0.35" fontSize="10" fontFamily="monospace" textAnchor="middle">{`TUBE BODY — ${unitU} ×${count}`}</text>
+      </g>
+    );
+  } else if (packagingType === 'pillow_pouch') {
+    layoutTitle = 'PILLOW POUCH / FLEXIBLE FILM SEAL TEMPLATE';
+    const totalWidthCm = L * 1.15;
+    const totalHeightCm = H * 1.3;
+    const scale = Math.min(560 / totalWidthCm, 320 / totalHeightCm);
+
+    const wPx = L * scale;
+    const hPx = H * scale;
+    const x0 = 400 - wPx / 2;
+    const xEnd = x0 + wPx;
+    const yT = 250 - hPx / 2;
+    const yB = yT + hPx;
+    const midX = (x0 + xEnd) / 2;
+    const midY = (yT + yB) / 2;
+    const seal = Math.min(18, hPx * 0.14);
+
+    svgContent = (
+      <g>
+        {/* Pouch body outline */}
+        <rect x={x0} y={yT} width={wPx} height={hPx} rx={10} fill="#1c1c1e" fillOpacity="0.45" stroke={cutLineColor} strokeWidth="1.5" />
+        {/* Heat-seal strips top & bottom */}
+        <rect x={x0} y={yT} width={wPx} height={seal} fill="#E61C24" fillOpacity="0.12" stroke={foldLineColor} strokeDasharray="3 2" strokeWidth="0.8" />
+        <rect x={x0} y={yB - seal} width={wPx} height={seal} fill="#E61C24" fillOpacity="0.12" stroke={foldLineColor} strokeDasharray="3 2" strokeWidth="0.8" />
+        {/* Center back-seam fold */}
+        <line x1={midX} y1={yT} x2={midX} y2={yB} stroke={foldLineColor} strokeDasharray="6 3" strokeWidth="1" />
+        {/* Tear notch on the right edge */}
+        <path d={`M ${xEnd},${yT + seal + 10} l -9,4 l 9,4`} fill="none" stroke={cutLineColor} strokeWidth="1.5" />
+
+        <text x={midX} y={yT + seal / 2 + 3} fill="#E61C24" fontSize="8" fontFamily="monospace" textAnchor="middle">TOP HEAT SEAL</text>
+        <text x={midX} y={yB - seal / 2 + 3} fill="#E61C24" fontSize="8" fontFamily="monospace" textAnchor="middle">BOTTOM SEAL</text>
+        <text x={midX} y={midY} fill="#ffffff" fillOpacity="0.35" fontSize="10" fontFamily="monospace" textAnchor="middle">{`${unitU} ×${count} INSIDE`}</text>
+
+        {/* Dimensions */}
+        <text x={midX} y={yT - 10} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle">{`W = ${L.toFixed(1)} cm`}</text>
+        <text x={x0 - 12} y={midY} fill={dimensionColor} fontSize="11" fontFamily="monospace" textAnchor="middle" transform={`rotate(-90, ${x0 - 12}, ${midY})`}>{`H = ${H.toFixed(1)} cm`}</text>
       </g>
     );
   }
