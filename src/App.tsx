@@ -126,7 +126,17 @@ export default function App() {
     return localStorage.getItem('packcraft_contact_email') || 'juliiyabrodska@gmail.com';
   });
   const [socialLink, setSocialLink] = useState(() => {
-    return localStorage.getItem('packcraft_social_link') || 'https://www.linkedin.com/in/juliiyabrodska';
+    const stored = localStorage.getItem('packcraft_social_link');
+    // Validate that stored value is a valid URL; fallback to default if not
+    if (stored) {
+      try {
+        new URL(stored);
+        return stored;
+      } catch {
+        localStorage.removeItem('packcraft_social_link');
+      }
+    }
+    return 'https://www.linkedin.com/in/juliiyabrodska';
   });
   const [showContactConfig, setShowContactConfig] = useState(false);
 
@@ -1267,13 +1277,16 @@ export default function App() {
                     </div>
                     <div>
                       <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Link (LinkedIn / Upwork / Website):</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={socialLink}
                         onChange={(e) => {
                           const val = e.target.value;
                           setSocialLink(val);
-                          localStorage.setItem('packcraft_social_link', val);
+                          // Only save if it's a valid URL or empty (empty resets to default)
+                          if (val === '' || (val.startsWith('http://') || val.startsWith('https://'))) {
+                            localStorage.setItem('packcraft_social_link', val);
+                          }
                         }}
                         placeholder="https://www.linkedin.com/..."
                         className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-indigo-500 focus:outline-none"

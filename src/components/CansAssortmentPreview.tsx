@@ -304,20 +304,21 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
           </div>
 
           {/* Data-driven retail-unit assortment (shape + grid adapt to config) */}
-          <div className="relative w-full grid gap-3 py-6 mt-3 z-10" style={{ transform: 'translateZ(15px)', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+          <div className="relative w-full grid py-8 mt-4 z-10 transition-all duration-300" style={{ transform: 'translateZ(15px)', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: `${Math.max(1.5, 2.5 - cols * 0.3)}rem` }}>
             {names.map((name, i) => (
-              <UnitCard
-                key={i}
-                shape={shape}
-                accent={ACCENTS[i % 4]}
-                name={name}
-                index={i}
-                gloss={gloss}
-                showWireframe={showWireframe}
-                productNoun={productNoun}
-                unitTag={unitTag}
-                artwork={artwork}
-              />
+              <div key={`unit-${i}-${cols}x${rows}`} className="flex justify-center animate-in fade-in duration-500">
+                <UnitCard
+                  shape={shape}
+                  accent={ACCENTS[i % 4]}
+                  name={name}
+                  index={i}
+                  gloss={gloss}
+                  showWireframe={showWireframe}
+                  productNoun={productNoun}
+                  unitTag={unitTag}
+                  artwork={artwork}
+                />
+              </div>
             ))}
           </div>
 
