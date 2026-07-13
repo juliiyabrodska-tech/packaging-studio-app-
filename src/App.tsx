@@ -140,6 +140,7 @@ export default function App() {
     return 'https://www.linkedin.com/in/juliiyabrodska';
   });
   const [showContactConfig, setShowContactConfig] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   // White-label branding state (persisted separately from the design specs)
   const [brandName, setBrandName] = useState(() => localStorage.getItem('packcraft_brand_name') || 'PackCraft 3D Studio');
@@ -1090,7 +1091,7 @@ export default function App() {
 
               {/* APPROVAL FORM EXPORT (Printable sign-off sheet) */}
               <button
-                onClick={() => generateApprovalFormPDF(specs)}
+                onClick={() => setShowApprovalModal(true)}
                 className="w-full bg-indigo-900 hover:bg-indigo-800 border border-indigo-700 text-white text-xs font-mono py-2.5 px-4 rounded flex items-center justify-center space-x-2 cursor-pointer transition-all"
                 id="btn-export-approval-form"
                 title="Export printable approval/sign-off form with signature fields for team members"
@@ -1341,6 +1342,88 @@ export default function App() {
             </div>
 
           </div>
+
+          {/* APPROVAL FORM MODAL - Team sign-off dialog */}
+          {showApprovalModal && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <div className="bg-coke-card border border-coke-border rounded-lg shadow-2xl max-w-md w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-coke-red font-bold text-sm uppercase font-mono">Team Approval Status</h3>
+                  <button
+                    onClick={() => setShowApprovalModal(false)}
+                    className="text-coke-gray hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <p className="text-xs text-zinc-400 font-mono">
+                  Mark team members who have approved this packaging specification:
+                </p>
+
+                <div className="space-y-3">
+                  {/* Oleh checkbox */}
+                  <label className="flex items-center space-x-2 cursor-pointer hover:bg-coke-border/30 p-2.5 rounded transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={specs.approvedOleh}
+                      onChange={(e) => updateSpec('approvedOleh', e.target.checked)}
+                      className="w-4 h-4 accent-coke-red cursor-pointer"
+                    />
+                    <span className="flex-1 text-sm font-mono text-white">BOM Manager (Oleh)</span>
+                    <span className="text-xs text-zinc-500">Technical</span>
+                  </label>
+
+                  {/* Serhiy checkbox */}
+                  <label className="flex items-center space-x-2 cursor-pointer hover:bg-coke-border/30 p-2.5 rounded transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={specs.approvedSerhiy}
+                      onChange={(e) => updateSpec('approvedSerhiy', e.target.checked)}
+                      className="w-4 h-4 accent-coke-red cursor-pointer"
+                    />
+                    <span className="flex-1 text-sm font-mono text-white">Finance Lead (Serhiy)</span>
+                    <span className="text-xs text-zinc-500">Budget</span>
+                  </label>
+
+                  {/* Maryna checkbox */}
+                  <label className="flex items-center space-x-2 cursor-pointer hover:bg-coke-border/30 p-2.5 rounded transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={specs.approvedMaryna}
+                      onChange={(e) => updateSpec('approvedMaryna', e.target.checked)}
+                      className="w-4 h-4 accent-coke-red cursor-pointer"
+                    />
+                    <span className="flex-1 text-sm font-mono text-white">Marketing Lead (Maryna)</span>
+                    <span className="text-xs text-zinc-500">Design</span>
+                  </label>
+                </div>
+
+                <div className="bg-coke-border/20 p-2.5 rounded text-xs text-zinc-400 font-mono">
+                  <span className="text-coke-red font-bold">Approved:</span> {[specs.approvedOleh, specs.approvedSerhiy, specs.approvedMaryna].filter(Boolean).length}/3
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      generateApprovalFormPDF(specs);
+                      setShowApprovalModal(false);
+                    }}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs font-mono py-2.5 rounded flex items-center justify-center space-x-1 transition-all"
+                  >
+                    <FileCheck className="w-4 h-4" />
+                    <span>EXPORT FORM</span>
+                  </button>
+                  <button
+                    onClick={() => setShowApprovalModal(false)}
+                    className="flex-1 bg-coke-dark hover:bg-zinc-800 border border-coke-border text-zinc-400 hover:text-white font-bold text-xs font-mono py-2.5 rounded transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* SATELLITE INDUSTRIAL CONSOLE SUMMARY FOOTER */}
           <div className="bg-[#0b0b0c] p-3 rounded-lg border border-coke-border/40 font-mono text-[9px] text-zinc-500 leading-normal select-none">
