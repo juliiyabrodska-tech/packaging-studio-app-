@@ -40,6 +40,9 @@ export interface PackagingSpecs {
   approvedSerhiy: boolean;
   approvedMaryna: boolean;
 
+  // Optional uploaded artwork (data URL) applied as a texture on 3D units
+  artworkUrl: string;
+
   // Custom log
   notes: string;
 }
@@ -76,6 +79,8 @@ export const INITIAL_SPECS: PackagingSpecs = {
   approvedOleh: false,
   approvedSerhiy: false,
   approvedMaryna: false,
+
+  artworkUrl: '',
 
   notes: 'Experimental promo assortments for the summer festival. Custom red-black premium palette, premium matte board lamination.'
 };

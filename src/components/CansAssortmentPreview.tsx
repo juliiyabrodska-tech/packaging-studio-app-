@@ -76,18 +76,21 @@ interface UnitCardProps {
   showWireframe: boolean;
   productNoun: string;
   unitTag: string;
+  artwork?: string;
 }
 
-const UnitCard: React.FC<UnitCardProps> = ({ shape, accent, name, index, gloss, showWireframe, productNoun, unitTag }) => {
+const UnitCard: React.FC<UnitCardProps> = ({ shape, accent, name, index, gloss, showWireframe, productNoun, unitTag, artwork }) => {
   const cfg = SHAPE_CFG[shape];
   const fallback = `${productNoun} ${index + 1}`;
+  const hasArt = !!artwork;
   return (
     <div className="flex flex-col items-center group">
       <div className="relative flex items-end justify-center h-[150px]">
         <div
-          className={`relative ${cfg.body} bg-gradient-to-r ${accent.grad} p-1.5 flex flex-col justify-between shadow-lg transition-all duration-200 ${
+          className={`relative ${cfg.body} ${hasArt ? '' : `bg-gradient-to-r ${accent.grad}`} p-1.5 flex flex-col justify-between shadow-lg transition-all duration-200 ${
             showWireframe ? 'border-2 border-dashed border-emerald-500' : `border ${accent.border}`
           }`}
+          style={hasArt ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.45)), url(${artwork})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
         >
           <GlossHighlights gloss={gloss} />
           <TopCap kind={cfg.top} />
@@ -130,6 +133,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
   const volumeLabel = industry.volumeLabel;
   const unitTag = volumeLabel !== '—' ? volumeLabel : productNoun.toUpperCase();
   const names = [flavor1, flavor2, flavor3, flavor4];
+  const artwork = specs.artworkUrl || undefined;
 
   // Multi-state configuration for ultimate Upwork portfolio impact
   const [rotation, setRotation] = useState<number>(-5);
@@ -303,6 +307,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
                 showWireframe={showWireframe}
                 productNoun={productNoun}
                 unitTag={unitTag}
+                artwork={artwork}
               />
             ))}
           </div>

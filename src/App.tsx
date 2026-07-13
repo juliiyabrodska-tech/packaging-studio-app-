@@ -19,7 +19,10 @@ import {
   ExternalLink,
   Mail,
   Briefcase,
-  Send
+  Send,
+  Palette,
+  Upload,
+  X
 } from 'lucide-react';
 import { PackagingSpecs, INITIAL_SPECS, PackagingType, IndustryId } from './types';
 import { INDUSTRIES, getIndustry } from './config/industries';
@@ -121,6 +124,14 @@ export default function App() {
   });
   const [showContactConfig, setShowContactConfig] = useState(false);
 
+  // White-label branding state (persisted separately from the design specs)
+  const [brandName, setBrandName] = useState(() => localStorage.getItem('packcraft_brand_name') || 'PackCraft 3D Studio');
+  const [brandInitials, setBrandInitials] = useState(() => localStorage.getItem('packcraft_brand_initials') || 'KR');
+  const [brandTagline, setBrandTagline] = useState(() => localStorage.getItem('packcraft_brand_tagline') || '');
+  const [brandAccent, setBrandAccent] = useState(() => localStorage.getItem('packcraft_brand_accent') || '#E61C24');
+  const [hideSupport, setHideSupport] = useState(() => localStorage.getItem('packcraft_hide_support') === '1');
+  const [showBrandConfig, setShowBrandConfig] = useState(false);
+
   // Status message for auto-saves
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
 
@@ -144,7 +155,12 @@ export default function App() {
     }
 
     const timer = setTimeout(() => {
-      localStorage.setItem('my_packaging_better_specs', JSON.stringify(currentSpecs));
+      try {
+        localStorage.setItem('my_packaging_better_specs', JSON.stringify(currentSpecs));
+      } catch (e) {
+        // e.g. QuotaExceededError when a large artwork data URL is attached
+        console.warn('Could not persist specs to localStorage (quota?).', e);
+      }
       setSaveStatus('saved');
     }, 450);
 
@@ -157,6 +173,17 @@ export default function App() {
       ...prev,
       [key]: value
     }));
+  };
+
+  // Read an uploaded image file into a data URL and store it on the spec
+  const handleArtworkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') updateSpec('artworkUrl', reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Preset selectors for quick reset/selection
@@ -343,16 +370,16 @@ export default function App() {
       {/* GLOBAL HUD ROW (HEADLINE HEADER) */}
       <header className="min-h-16 w-full border-b border-coke-border bg-coke-black px-4 md:px-6 py-3 md:py-0 flex flex-col md:flex-row items-center justify-between gap-4 z-20">
         <div className="flex items-center space-x-3 w-full md:w-auto">
-          <div className="w-10 h-10 bg-coke-red rounded flex items-center justify-center border border-red-400/30 shrink-0">
-            <span className="font-mono font-extrabold text-[#fff] tracking-tighter text-xl">KR</span>
+          <div className="w-10 h-10 rounded flex items-center justify-center border border-white/20 shrink-0" style={{ backgroundColor: brandAccent }}>
+            <span className="font-mono font-extrabold text-[#fff] tracking-tighter text-xl">{brandInitials || 'KR'}</span>
           </div>
           <div>
             <h1 className="text-sm md:text-base font-bold uppercase tracking-tight text-white flex items-center gap-1.5 flex-wrap">
-              <span>PackCraft 3D Studio</span>
+              <span>{brandName || 'PackCraft 3D Studio'}</span>
               <span className="text-[10px] bg-coke-red-dim text-coke-red border border-coke-red/40 px-1.5 py-0.5 rounded font-mono font-bold shrink-0">V0.5 CAD</span>
             </h1>
             <p className="text-[10px] text-coke-gray font-mono uppercase tracking-widest sm:block hidden mt-0.5">
-              {industry.tagline}
+              {brandTagline || industry.tagline}
             </p>
           </div>
         </div>
@@ -480,6 +507,32 @@ export default function App() {
                 <span className="text-coke-gray text-[10px]">TOTAL EMPTY WEIGHT:</span>
                 <div className="text-sm font-bold text-white mt-0.5">~ 0.18 kg (With board)</div>
               </div>
+            </div>
+          </div>
+
+          {/* PACKAGING ARTWORK UPLOAD */}
+          <div className="bg-coke-black rounded-lg border border-coke-border p-3 font-mono text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-coke-red font-bold uppercase tracking-wide">
+              <Upload className="w-4 h-4" />
+              <span>Packaging Artwork <span className="text-zinc-500 normal-case font-normal">(applied to 3D units)</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              {specs.artworkUrl ? (
+                <>
+                  <img src={specs.artworkUrl} alt="artwork preview" className="h-8 w-8 object-cover rounded border border-coke-border" />
+                  <button
+                    onClick={() => updateSpec('artworkUrl', '')}
+                    className="text-[10px] text-zinc-400 hover:text-coke-red flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" /> REMOVE
+                  </button>
+                </>
+              ) : (
+                <label className="cursor-pointer bg-coke-dark hover:bg-zinc-800 border border-coke-border rounded px-3 py-1.5 text-[10px] text-white flex items-center gap-1.5">
+                  <Upload className="w-3 h-3 text-coke-red" /> UPLOAD IMAGE
+                  <input type="file" accept="image/*" onChange={handleArtworkUpload} className="hidden" />
+                </label>
+              )}
             </div>
           </div>
 
@@ -1036,6 +1089,62 @@ export default function App() {
                 <span>Reset to standard 0.5L factory specifications</span>
               </button>
 
+              {/* BRAND / WHITE-LABEL PANEL */}
+              <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#161616] rounded-lg border border-white/10 space-y-3 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-white font-bold text-xs uppercase tracking-wider font-mono">
+                    <Palette className="w-4 h-4 shrink-0" style={{ color: brandAccent }} />
+                    <span>Brand / White-Label</span>
+                  </div>
+                  <button
+                    onClick={() => setShowBrandConfig(!showBrandConfig)}
+                    className="text-[9px] font-mono text-zinc-500 hover:text-white underline transition-colors cursor-pointer bg-transparent border-0"
+                  >
+                    {showBrandConfig ? 'HIDE' : 'CONFIGURE BRAND'}
+                  </button>
+                </div>
+                {showBrandConfig && (
+                  <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-2.5">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Brand Name:</label>
+                        <input type="text" value={brandName}
+                          onChange={(e) => { setBrandName(e.target.value); localStorage.setItem('packcraft_brand_name', e.target.value); }}
+                          className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-white/40 focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Logo:</label>
+                        <input type="text" maxLength={3} value={brandInitials}
+                          onChange={(e) => { const v = e.target.value.toUpperCase(); setBrandInitials(v); localStorage.setItem('packcraft_brand_initials', v); }}
+                          className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-white/40 focus:outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase block mb-1">Tagline (blank = industry default):</label>
+                      <input type="text" value={brandTagline}
+                        onChange={(e) => { setBrandTagline(e.target.value); localStorage.setItem('packcraft_brand_tagline', e.target.value); }}
+                        placeholder={industry.tagline}
+                        className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-white/40 focus:outline-none" />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <label className="text-[9px] text-zinc-400 font-mono uppercase flex items-center gap-2">
+                        <span>Accent color:</span>
+                        <input type="color" value={brandAccent}
+                          onChange={(e) => { setBrandAccent(e.target.value); localStorage.setItem('packcraft_brand_accent', e.target.value); }}
+                          className="w-8 h-6 bg-transparent border border-zinc-700 rounded cursor-pointer" />
+                      </label>
+                      <label className="text-[9px] text-zinc-300 font-mono flex items-center gap-1.5 cursor-pointer select-none">
+                        <input type="checkbox" checked={hideSupport}
+                          onChange={(e) => { setHideSupport(e.target.checked); localStorage.setItem('packcraft_hide_support', e.target.checked ? '1' : '0'); }}
+                          className="accent-white" />
+                        <span>Hide support &amp; business blocks</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {!hideSupport && (<>
               {/* BUY ME A COFFEE WIDGET */}
               <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#1a1a1f] rounded-lg border border-yellow-500/20 space-y-3 shadow-md">
                 <div className="flex items-center justify-between">
@@ -1194,6 +1303,7 @@ export default function App() {
                   </a>
                 </div>
               </div>
+              </>)}
 
             </div>
 
