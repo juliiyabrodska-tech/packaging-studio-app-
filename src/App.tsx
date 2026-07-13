@@ -25,7 +25,7 @@ import {
   X
 } from 'lucide-react';
 import { PackagingSpecs, INITIAL_SPECS, PackagingType, IndustryId } from './types';
-import { INDUSTRIES, getIndustry } from './config/industries';
+import { INDUSTRIES, getIndustry, GRID_LAYOUTS, buildVariants } from './config/industries';
 import { PackagingDielineSVG } from './components/PackagingDielineSVG';
 import { CansAssortmentPreview } from './components/CansAssortmentPreview';
 import { generateSpecsPDFChecklist, exportSpecsToCSV } from './utils/pdfGenerator';
@@ -79,10 +79,7 @@ export default function App() {
 
     return {
       ...data,
-      flavor1: flavorMap[data.flavor1.trim()] || data.flavor1,
-      flavor2: flavorMap[data.flavor2.trim()] || data.flavor2,
-      flavor3: flavorMap[data.flavor3.trim()] || data.flavor3,
-      flavor4: flavorMap[data.flavor4.trim()] || data.flavor4,
+      variants: (data.variants || []).map((v) => flavorMap[v.trim()] || v),
       notes: notesMap[data.notes.trim()] || data.notes,
     };
   };
@@ -95,6 +92,15 @@ export default function App() {
         const parsed = JSON.parse(saved);
         // Fallback for any missing properties in updated revisions
         const loaded = { ...INITIAL_SPECS, ...parsed };
+        // Migrate legacy fixed flavor1..4 fields into the variants array
+        if (!Array.isArray(parsed.variants)) {
+          const legacy = [parsed.flavor1, parsed.flavor2, parsed.flavor3, parsed.flavor4].filter(Boolean);
+          loaded.variants = legacy.length ? legacy : INITIAL_SPECS.variants;
+        }
+        if (!loaded.gridCols || !loaded.gridRows) {
+          loaded.gridCols = 2;
+          loaded.gridRows = 2;
+        }
         return migrateUkrainianToEnglish(loaded);
       }
     } catch (e) {
@@ -138,25 +144,26 @@ export default function App() {
   // 2. Perform Auto-save on spec updates and compute auto-dimensions if lock is on
   useEffect(() => {
     setSaveStatus('saving');
-    
-    let currentSpecs = { ...specs };
-    
-    // Auto calculations based on standard 500ml (0.5L) can specs:
-    // Diameter = 6.63 cm, Height = 16.80 cm
-    // Carton needs a tiny bit of clearance tolerance so it folds comfortably around 2x2 grid
+
+    // Auto-computed carton dimensions from the unit size and pack grid:
+    // L scales with columns, W with rows, plus a small folding clearance.
     if (!isOverrideEnabled) {
-      const computedL = parseFloat((specs.canDiameter * 2 + 0.24).toFixed(2));
-      const computedW = parseFloat((specs.canDiameter * 2 + 0.24).toFixed(2));
+      const computedL = parseFloat((specs.canDiameter * specs.gridCols + 0.24).toFixed(2));
+      const computedW = parseFloat((specs.canDiameter * specs.gridRows + 0.24).toFixed(2));
       const computedH = parseFloat((specs.canHeight + 0.2).toFixed(2));
-      
-      currentSpecs.cartonLength = computedL;
-      currentSpecs.cartonWidth = computedW;
-      currentSpecs.cartonHeight = computedH;
+
+      if (computedL !== specs.cartonLength || computedW !== specs.cartonWidth || computedH !== specs.cartonHeight) {
+        // Push the computed dimensions into state so the blueprint, 3D preview
+        // and BOM all reflect them live. This re-runs the effect, which then
+        // persists on the settled pass (no infinite loop: values now match).
+        setSpecs(prev => ({ ...prev, cartonLength: computedL, cartonWidth: computedW, cartonHeight: computedH }));
+        return;
+      }
     }
 
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem('my_packaging_better_specs', JSON.stringify(currentSpecs));
+        localStorage.setItem('my_packaging_better_specs', JSON.stringify(specs));
       } catch (e) {
         // e.g. QuotaExceededError when a large artwork data URL is attached
         console.warn('Could not persist specs to localStorage (quota?).', e);
@@ -198,10 +205,9 @@ export default function App() {
         printingMethod: 'offset',
         colorsCount: 6,
         coatingOption: 'soft_touch',
-        flavor1: 'Cherry Berry Classic',
-        flavor2: 'Crazy Lime-Mint',
-        flavor3: 'Forest Berries Zero',
-        flavor4: 'Caribbean Spicy Orange',
+        variants: ['Cherry Berry Classic', 'Crazy Lime-Mint', 'Forest Berries Zero', 'Caribbean Spicy Orange'],
+        gridCols: 2,
+        gridRows: 2,
         reinforcedBottom: true,
         fingerHoles: true,
         flavorDividers: true,
@@ -218,10 +224,9 @@ export default function App() {
         printingMethod: 'flexo',
         colorsCount: 2,
         coatingOption: 'none',
-        flavor1: 'Wild Raspberry Sugar Free',
-        flavor2: 'Apple Sidecrush',
-        flavor3: 'Orange Fizz',
-        flavor4: 'Classic Kvass Ale',
+        variants: ['Wild Raspberry Sugar Free', 'Apple Sidecrush', 'Orange Fizz', 'Classic Kvass Ale'],
+        gridCols: 2,
+        gridRows: 2,
         reinforcedBottom: true,
         fingerHoles: true,
         flavorDividers: false,
@@ -238,10 +243,9 @@ export default function App() {
         printingMethod: 'digital',
         colorsCount: 4,
         coatingOption: 'matte',
-        flavor1: 'Coffee-Fizz Booster',
-        flavor2: 'Watermelon Boom',
-        flavor3: 'Pineapple Splash',
-        flavor4: 'Ginger Fizz Crisp',
+        variants: ['Coffee-Fizz Booster', 'Watermelon Boom', 'Pineapple Splash', 'Ginger Fizz Crisp'],
+        gridCols: 2,
+        gridRows: 2,
         reinforcedBottom: false,
         fingerHoles: true,
         flavorDividers: false,
@@ -267,14 +271,29 @@ export default function App() {
   // default variant names so the assortment reads correctly out of the box.
   const handleIndustryChange = (id: IndustryId) => {
     const prof = getIndustry(id);
-    setSpecs(prev => ({
-      ...prev,
-      industry: id,
-      flavor1: prof.defaultVariants[0],
-      flavor2: prof.defaultVariants[1],
-      flavor3: prof.defaultVariants[2],
-      flavor4: prof.defaultVariants[3],
-    }));
+    setSpecs(prev => {
+      const count = prev.gridCols * prev.gridRows;
+      // Reseed the assortment from the new industry's defaults at current size
+      return { ...prev, industry: id, variants: buildVariants([], count, prof.defaultVariants, prof.variantNoun) };
+    });
+  };
+
+  // Change the pack layout, growing/shrinking the assortment to match.
+  const handleGridChange = (cols: number, rows: number) => {
+    setSpecs(prev => {
+      const prof = getIndustry(prev.industry);
+      const count = cols * rows;
+      return { ...prev, gridCols: cols, gridRows: rows, variants: buildVariants(prev.variants, count, prof.defaultVariants, prof.variantNoun) };
+    });
+  };
+
+  // Update a single assortment entry by index.
+  const updateVariant = (i: number, value: string) => {
+    setSpecs(prev => {
+      const next = [...prev.variants];
+      next[i] = value;
+      return { ...prev, variants: next };
+    });
   };
 
   // Checks if downloading is permitted. Sign-off is optional per project:
@@ -792,65 +811,45 @@ export default function App() {
             <div className="space-y-3 pb-3.5 border-b border-coke-border">
               <div className="flex items-center space-x-2 text-coke-red font-bold text-xs uppercase tracking-wider font-mono">
                 <Sliders className="w-3.5 h-3.5" />
-                <span>III. {industry.variantNoun.toUpperCase()}S (4 VARIETIES BUNDLE)</span>
+                <span>III. {industry.variantNoun.toUpperCase()}S ({specs.variants.length} VARIETIES)</span>
+              </div>
+
+              {/* Pack layout selector — drives the assortment size */}
+              <div className="flex flex-col space-y-1">
+                <label className="text-[10px] text-coke-gray font-mono uppercase">Pack Layout (columns × rows):</label>
+                <select
+                  value={`${specs.gridCols}x${specs.gridRows}`}
+                  onChange={(e) => { const [c, r] = e.target.value.split('x').map(Number); handleGridChange(c, r); }}
+                  className="bg-coke-dark border border-coke-border text-white text-xs rounded p-2 focus:border-coke-red focus:outline-none"
+                  id="select-grid-layout"
+                >
+                  {GRID_LAYOUTS.map((g) => (
+                    <option key={`${g.cols}x${g.rows}`} value={`${g.cols}x${g.rows}`}>{g.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-red-400 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                    <span>{industry.variantLabels[0]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor1}
-                    onChange={(e) => updateSpec('flavor1', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-1"
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-emerald-400 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>{industry.variantLabels[1]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor2}
-                    onChange={(e) => updateSpec('flavor2', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-2"
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-purple-400 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                    <span>{industry.variantLabels[2]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor3}
-                    onChange={(e) => updateSpec('flavor3', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-3"
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-0.5">
-                  <label className="text-[10px] text-amber-500 font-mono flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                    <span>{industry.variantLabels[3]}</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={specs.flavor4}
-                    onChange={(e) => updateSpec('flavor4', e.target.value)}
-                    className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
-                    id="input-flavor-4"
-                  />
-                </div>
+                {specs.variants.map((v, i) => {
+                  const dot = ['bg-red-600', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500'][i % 4];
+                  const txt = ['text-red-400', 'text-emerald-400', 'text-purple-400', 'text-amber-500'][i % 4];
+                  const label = industry.variantLabels[i] || `${i + 1}. ${industry.variantNoun} (${String.fromCharCode(65 + i)})`;
+                  return (
+                    <div key={i} className="flex flex-col space-y-0.5">
+                      <label className={`text-[10px] ${txt} font-mono flex items-center space-x-1`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${dot}`}></span>
+                        <span className="truncate">{label}</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={v}
+                        onChange={(e) => updateVariant(i, e.target.value)}
+                        className="bg-coke-dark border border-coke-border text-white text-xs rounded p-1.5 focus:border-coke-red focus:outline-none font-sans font-medium"
+                        id={`input-variant-${i}`}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

@@ -24,6 +24,9 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
   const industry = getIndustry(specs.industry);
   const productNoun = industry.productNoun;
   const unitU = productNoun.toUpperCase();
+  const cols = specs.gridCols || 2;
+  const rows = specs.gridRows || 2;
+  const count = cols * rows;
 
   // Let's translate real physical cm to responsive drawing scale.
   // We want to ensure the entire unfolded layout (die-line) fits beautifully within our 800x520 viewport.
@@ -161,15 +164,17 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
         <path d={`M ${xEnd},${yT} L ${xEnd},${yB}`} stroke={cutLineColor} strokeWidth="1.5" fill="none" />
         <path d={`M ${x4},${yB} L ${x4 + 8},${yB + flapDepth * 0.77} L ${xEnd - 8},${yB + flapDepth * 0.77} L ${xEnd},${yB}`} stroke={cutLineColor} strokeWidth="1.5" fill="none" />
 
-        {/* Circle placements of 4 interior cans represented for scale */}
+        {/* Unit footprint map (cols x rows) drawn on the front panel for scale */}
         <g stroke="#ffffff" strokeDasharray="3 4" strokeOpacity="0.25" fill="none">
-          {/* Can position indicator rings underneath Panel 1 and Panel 3 */}
-          <circle cx={x1 + lPx * 0.25} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <circle cx={x1 + lPx * 0.75} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <circle cx={x3 + lPx * 0.25} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <circle cx={x3 + lPx * 0.75} cy={yT + hPx * 0.5} r={canDiameter * 0.5 * scale} />
-          <text x={x1 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} 1-2`}</text>
-          <text x={x3 + lPx * 0.5} y={yT + hPx * 0.5 + 4} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} 3-4`}</text>
+          {Array.from({ length: rows }).map((_, r) =>
+            Array.from({ length: cols }).map((_, c) => {
+              const cxp = x1 + lPx * ((c + 0.5) / cols);
+              const cyp = yT + hPx * ((r + 0.5) / rows);
+              const rr = Math.min(lPx / cols, hPx / rows) * 0.32;
+              return <circle key={`fp-${r}-${c}`} cx={cxp} cy={cyp} r={rr} />;
+            })
+          )}
+          <text x={x1 + lPx * 0.5} y={yT + hPx - 6} textAnchor="middle" fill="#ffffff" fillOpacity="0.2" fontSize="9" fontFamily="monospace">{`BOM ${unitU} ×${count} (${cols}×${rows})`}</text>
         </g>
 
         {/* --- DIMENSION ANNOTATIONS --- */}
@@ -499,7 +504,7 @@ export const PackagingDielineSVG: React.FC<SVGProps> = ({ specs }) => {
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-[#000000] border-t border-coke-border grid grid-cols-4 select-none font-mono text-[9px] text-white">
         <div className="border-r border-coke-border p-1.5 flex flex-col justify-between">
           <div className="text-coke-gray text-[8px] uppercase">CUSTOMER BUILD:</div>
-          <div className="font-bold text-coke-red select-all truncate">{`4 × ${industry.volumeLabel} ${unitU} PACK`}</div>
+          <div className="font-bold text-coke-red select-all truncate">{`${count} × ${industry.volumeLabel} ${unitU} PACK`}</div>
           <div className="text-[7px] text-coke-gray">DATE: {new Date().toLocaleDateString('en-US')}</div>
         </div>
         <div className="border-r border-coke-border p-1.5 flex flex-col justify-between">
