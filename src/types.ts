@@ -1,4 +1,4 @@
-export type PackagingType = 'closed_box_2x2' | 'basket_handle' | 'sleeve_pack';
+export type PackagingType = 'closed_box_2x2' | 'basket_handle' | 'sleeve_pack' | 'tube_carton' | 'pillow_pouch';
 
 // Business vertical the studio is configured for. Re-labels product/variant
 // terminology across the UI and exports so the tool is not beverage-specific.
