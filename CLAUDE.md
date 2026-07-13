@@ -233,3 +233,133 @@ Two new packaging structures with their own parametric die-lines…
 - **Localization**: The UI currently hard-codes English labels; adding i18n would require extracting all strings to a message catalog
 - **Testing**: No test suite exists yet; adding Jest + React Testing Library would improve refactoring safety
 - **Admin panel**: Currently no user account system; multi-user save/load would require a backend
+
+---
+
+## Business Context: Lead Magnet + Revenue Stream Strategy
+
+### Positioning (Yulia's No-Code Automation Services)
+
+This app serves **dual purposes**:
+1. **Lead Magnet**: Free tool for SMB/Enterprise to design packaging instantly
+2. **Upsell Bridge**: "Love the design automation? We can automate your entire CRM / supply chain / customer communication" → sell full n8n + Claude AI automation services ($5-15k per project)
+
+### Client Success Journey
+
+```
+Cold LinkedIn outreach → "Free packaging design tool" 
+  → User tries app (sees 2D die-line + 3D preview + PDF export + cost in 30 sec)
+    → Realizes manual design takes weeks; automation saves 20+ hours
+      → Books call: "Can you automate my [CRM sync / supplier quoting / order workflow]?"
+        → Closes automation contract using n8n + Claude + HubSpot
+```
+
+### Why This Works as Lead Magnet
+
+- **Instant Gratification**: No signup, no login. Design + export PDF in 30 seconds
+- **Pain Made Visible**: Grid layout shows assortment complexity → leads to: "Imagine if this auto-updated my supplier database"
+- **Professional Output**: Users get polished PDF die-line + BOM → positions Yulia as premium, not cheap
+- **White-Label Ready**: Can be re-branded for agencies or suppliers (future revenue stream)
+
+### Integration Points (For Automation Services)
+
+**Scenario 1: Auto-Quote Workflow**
+```
+User designs packaging → Clicks "Send to Supplier"
+  → n8n webhook receives spec JSON
+    → Queries supplier pricing API based on material/qty
+      → Auto-generates RFQ email → sends via Zapier
+        → Logs quote in HubSpot deal → sends notification to approver
+```
+
+**Scenario 2: AI Cost Optimization** (Claude + Gemini)
+```
+User finalizes design → Clicks "AI Optimization Tips"
+  → Gemini analyzes spec JSON → suggests: "Reduce height 2cm → save 15% material"
+    → User clicks "Apply" → carton auto-resizes → cost updates instantly
+      → Approval email sent with optimized spec + savings breakdown
+```
+
+**Scenario 3: Multi-Approver Workflow**
+```
+Designer creates packaging spec
+  → Clicks "Request Sign-Off" → email sent to 3 approvers
+    → Each approver reviews PDF, checks approval box
+      → Once all approve → n8n triggers: PO auto-generation → supplier email sent
+        → Order tracked in HubSpot → team notified on Telegram
+```
+
+**Current Status**: MVP is standalone. Ready to add webhook triggers and API endpoints for automation.
+
+---
+
+## API & Integration Hooks (Ready for n8n/Zapier)
+
+### Export Formats (For Automation Workflows)
+
+**JSON Spec** (ready to POST to n8n)
+```
+User clicks "Export for Automation"
+  → Returns: { industry, packagingType, variants[], dimensions, materials, cost, ... }
+  → n8n receives JSON → parses supplier requirements → sends RFQ → logs in CRM
+```
+
+**PDF Export** (ready to email/archive)
+```
+Already implemented in frontend
+  → 2-page PDF: Page 1 = BOM + approvals, Page 2 = die-line
+  → Ready to send via email (Zapier) or archive in SharePoint
+```
+
+**CSV Bill of Materials** (ready to split by supplier)
+```
+Already implemented
+  → Variant-by-variant material costs
+  → n8n can parse CSV → group by supplier → auto-send quote requests
+```
+
+### Webhook Trigger Points (To Implement)
+
+```
+POST /api/webhook/on-export → triggers n8n: supplier quote + HubSpot sync
+POST /api/webhook/on-approve → triggers: auto-generate PO → send to supplier
+POST /api/webhook/on-artwork-upload → triggers: brand check (Gemini) + team notify
+```
+
+### Gemini Integration (For AI Features)
+
+`@google/genai` is already in dependencies.
+
+**Use Case: Auto-Optimization Button**
+```
+export async function getOptimizationSuggestions(specs: PackagingSpecs) {
+  const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  
+  const prompt = `Analyze this packaging spec and suggest cost reductions:
+  ${JSON.stringify(specs)}
+  
+  Output: JSON with { suggestions: [ { area, idea, savingsPercent } ] }`;
+  
+  return await model.generateContent(prompt);
+}
+```
+
+Then add button in UI: "💡 Get AI Optimization Tips" → displays suggestions inline.
+
+---
+
+## LinkedIn Content Ideas (To Drive Lead Magnet)
+
+**Post 1: Packaging Design Speed**
+"Packaging design used to take our team 3 weeks. Now it's 3 minutes. Try the free tool → https://[app-link]"
+
+**Post 2: Automation Opportunity**
+"If packaging design can be instant, imagine what we can do with your CRM, supply chain, customer communication. That's what automation looks like."
+
+**Post 3: Integration Demo**
+Show 2D die-line → 3D preview → PDF export in 15-second video. Message: "This design tool connects to n8n, Claude AI, HubSpot to automate your entire packaging workflow."
+
+**Post 4: Industry Proof**
+Case study format: "Craft brewery was manually designing labels, updating supplier orders, tracking inventory. Now? All automated. Zero manual work."
+
