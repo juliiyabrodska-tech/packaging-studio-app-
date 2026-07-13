@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { PackagingSpecs } from '../types';
+import { getIndustry } from '../config/industries';
 
 // Helper function to replace Cyrillic strings with clean English or Latin transliterated equivalents.
 // This is essential since standard jsPDF fonts only support CP1252 / WinAnsi and don't embed Cyrillic glyphs.
@@ -122,6 +123,11 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     tearPerforation,
     notes,
   } = specs;
+
+  // Industry profile drives product/variant terminology across the sheet.
+  const industry = getIndustry(specs.industry);
+  const productNoun = industry.productNoun;
+  const variantNoun = industry.variantNoun;
 
   // 1. Initialize Portrait A4 Document (210mm x 297mm)
   const doc = new jsPDF({
@@ -287,9 +293,9 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   const tableData1 = [
     ['Parameter', 'Configured Value', 'Engineering Description'],
     ['Packaging Model', formatType(packagingType), 'Primary containment style'],
-    ['Container Size', '4 x 0.5 Liters (Assortment)', 'Standard aluminium canister profile'],
-    ['Can Outer Diameter', `${canDiameter} cm (66.3 mm)`, 'Strict tolerance clearance limit'],
-    ['Can Shell Height', `${canHeight} cm (168 mm)`, 'Optimal container vertical profile'],
+    ['Unit Size', `4 x ${industry.volumeLabel} (Assortment)`, `Standard ${productNoun.toLowerCase()} profile`],
+    [`${productNoun} Outer Diameter`, `${canDiameter} cm (${(canDiameter * 10).toFixed(1)} mm)`, 'Strict tolerance clearance limit'],
+    [`${productNoun} Height`, `${canHeight} cm (${(canHeight * 10).toFixed(0)} mm)`, 'Optimal container vertical profile'],
     ['Box Flat Length', `${cartonLength} cm`, 'Calculated outer dimension (X-axis)'],
     ['Box Flat Width', `${cartonWidth} cm`, 'Calculated outer dimension (Y-axis)'],
     ['Box Flat Height', `${cartonHeight} cm`, 'Calculated outer dimension (Z-axis)'],
@@ -366,14 +372,14 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(230, 28, 36);
-  doc.text('3. CUSTOM FLAVOR BUNDLING SPECIFICATIONS (4 VARIETIES)', 12, currentY);
+  doc.text(`3. CUSTOM ${variantNoun.toUpperCase()} BUNDLING SPECIFICATIONS (4 VARIETIES)`, 12, currentY);
 
   const flavorData = [
-    ['Can ID', 'Assortment Flavor Name', 'Tag Label Color Accent'],
-    ['Canister A', cleanCyrillic(flavor1) || 'Flavor A Class', 'Brand Red Accent (Dark Red)'],
-    ['Canister B', cleanCyrillic(flavor2) || 'Flavor B Bold', 'Electric Lime Tonic (Green)'],
-    ['Canister C', cleanCyrillic(flavor3) || 'Flavor C Zero', 'Cosmos Berry Purple (Violet)'],
-    ['Canister D', cleanCyrillic(flavor4) || 'Flavor D Tonic', 'Rich Amber Orange (Gold)'],
+    [`${productNoun} ID`, `Assortment ${variantNoun} Name`, 'Tag Label Color Accent'],
+    [`${productNoun} A`, cleanCyrillic(flavor1) || `${variantNoun} A`, 'Brand Red Accent (Dark Red)'],
+    [`${productNoun} B`, cleanCyrillic(flavor2) || `${variantNoun} B`, 'Electric Lime Tonic (Green)'],
+    [`${productNoun} C`, cleanCyrillic(flavor3) || `${variantNoun} C`, 'Cosmos Berry Purple (Violet)'],
+    [`${productNoun} D`, cleanCyrillic(flavor4) || `${variantNoun} D`, 'Rich Amber Orange (Gold)'],
   ];
 
   tableY = currentY + 3;
@@ -642,7 +648,7 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.text('PACKCRAFT 3D STUDIO (V0.5)', 15, blockY + 6);
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(6.5);
-  doc.text(`DEVELOPED UNDER SUPERVISION FOR 4 X 0.5L BEVERAGES VARIETY PACK`, 15, blockY + 11);
+  doc.text(`DEVELOPED FOR A 4-UNIT ${productNoun.toUpperCase()} VARIETY PACK (${industry.label.toUpperCase()})`, 15, blockY + 11);
 
   doc.text(`MATERIAL STYLES: ${outerMaterial.toUpperCase()} - ${cleanCyrillic(materialWeight)}`, 15, blockY + 21);
   doc.text(`MANUFACTURE TOLERANCE THICKNESS: ${cleanCyrillic(materialThickness)} (ISO)`, 15, blockY + 26);
@@ -696,6 +702,10 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
     notes
   } = specs;
 
+  const industry = getIndustry(specs.industry);
+  const productNoun = industry.productNoun;
+  const variantNoun = industry.variantNoun;
+
   // Header headers - Standard Excel formatting
   let csvContent = 'data:text/csv;charset=utf-8,';
   
@@ -705,10 +715,10 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
     ['Project Title', 'PackCraft 3D Studio', '-', 'Technical assembly specification'],
     ['Unique Version ID', 'CAD-MP-4X500L-2026', '-', 'Generative model code'],
     ['Structure Type', packagingType === 'closed_box_2x2' ? 'Closed Box 2x2' : packagingType === 'basket_handle' ? 'Basket Carrier with Handle' : 'Tension Sleeve Wrapper', '-', 'Base engineering profile'],
-    ['Beverage Volume', '4 x 0.5', 'Liters (L)', 'Total liquid volume in variety pack'],
-    ['Canister Material', containerMaterial === 'aluminium' ? 'Aluminum Can 500ml' : containerMaterial === 'glass' ? 'Glass Bottle' : 'PET Bottle', '-', 'Retail container unit'],
-    ['Can Outer Diameter', canDiameter.toString(), 'cm', 'Diameter clearing limit'],
-    ['Can Height', canHeight.toString(), 'cm', 'Envelope height of pack'],
+    ['Pack Unit Volume', `4 x ${industry.volumeLabel}`, '-', 'Per-unit content in variety pack'],
+    [`${productNoun} Container Material`, containerMaterial === 'aluminium' ? 'Aluminum' : containerMaterial === 'glass' ? 'Glass' : 'PET / Plastic', '-', 'Retail container unit'],
+    [`${productNoun} Outer Diameter/Width`, canDiameter.toString(), 'cm', 'Diameter clearing limit'],
+    [`${productNoun} Height`, canHeight.toString(), 'cm', 'Envelope height of pack'],
     ['Theoretical Box Length (L)', cartonLength.toString(), 'cm', 'X-axis dimension'],
     ['Theoretical Box Width (W)', cartonWidth.toString(), 'cm', 'Y-axis dimension'],
     ['Theoretical Box Height (H)', cartonHeight.toString(), 'cm', 'Z-axis dimension'],
@@ -718,10 +728,10 @@ export const exportSpecsToCSV = (specs: PackagingSpecs) => {
     ['Primary Printing Method', printingMethod === 'offset' ? 'Litho Offset Printing' : printingMethod === 'flexo' ? 'High Speed Flexography' : 'Digital Latex Printing', '-', 'Ink transfer technology'],
     ['Colors Count', colorsCount.toString(), 'Pantone/CMYK', 'Inks configuration count'],
     ['Finishing Protective Layer', coatingOption === 'matte' ? 'Protective Matte Coating' : coatingOption === 'gloss' ? 'Gloss Coating' : coatingOption === 'uv_selective' ? 'Spot UV Selective' : 'Soft-Touch Silk-Lamination', '-', 'Surface finishing option'],
-    ['Assortment Flavor 1 (Red)', flavor1, '-', 'Beverage contents, Canister 1'],
-    ['Assortment Flavor 2 (Green)', flavor2, '-', 'Beverage contents, Canister 2'],
-    ['Assortment Flavor 3 (Violet)', flavor3, '-', 'Beverage contents, Canister 3'],
-    ['Assortment Flavor 4 (Gold)', flavor4, '-', 'Beverage contents, Canister 4'],
+    [`Assortment ${variantNoun} 1 (Red)`, flavor1, '-', `Contents, ${productNoun} 1`],
+    [`Assortment ${variantNoun} 2 (Green)`, flavor2, '-', `Contents, ${productNoun} 2`],
+    [`Assortment ${variantNoun} 3 (Violet)`, flavor3, '-', `Contents, ${productNoun} 3`],
+    [`Assortment ${variantNoun} 4 (Gold)`, flavor4, '-', `Contents, ${productNoun} 4`],
     ['Reinforced Double Base', reinforcedBottom ? 'ACTIVE / YES' : 'NO', '-', 'Reinforcement under can cells'],
     ['Finger Carry Holes', fingerHoles ? 'ACTIVE / YES' : 'NO', '-', 'Cutout flaps on top panel'],
     ['Internal Cell Dividers', flavorDividers ? 'ACTIVE / YES' : 'NO', '-', 'Individual partition cardboards'],
