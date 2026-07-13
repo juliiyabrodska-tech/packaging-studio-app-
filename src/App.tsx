@@ -15,9 +15,6 @@ import {
   Sparkles,
   Sliders,
   Paintbrush,
-  Coffee,
-  Heart,
-  ExternalLink,
   Mail,
   Briefcase,
   Send,
@@ -115,12 +112,6 @@ export default function App() {
 
   // Manual dimension override state (false = auto calculations locked to the 0.5L cans, true = manually adjustable cm)
   const [isOverrideEnabled, setIsOverrideEnabled] = useState(false);
-
-  // Buy Me a Coffee customization state
-  const [bmcUsername, setBmcUsername] = useState(() => {
-    return localStorage.getItem('packcraft_bmc_user') || 'https://send.monobank.ua/jar/9ZkTL7u4xR';
-  });
-  const [showBmcConfig, setShowBmcConfig] = useState(false);
 
   // Business and custom orders customization state
   const [contactEmail, setContactEmail] = useState(() => {
@@ -1176,86 +1167,6 @@ export default function App() {
               </div>
 
               {!hideSupport && (<>
-              {/* BUY ME A COFFEE WIDGET */}
-              <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#1a1a1f] rounded-lg border border-yellow-500/20 space-y-3 shadow-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-yellow-500 font-bold text-xs uppercase tracking-wider font-mono">
-                    <Coffee className="w-4 h-4 text-yellow-500 animate-pulse shrink-0" />
-                    <span>SUPPORT THE PROJECT</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowBmcConfig(!showBmcConfig)}
-                    className="text-[9px] font-mono text-zinc-500 hover:text-yellow-400 underline transition-colors cursor-pointer bg-transparent border-0"
-                    title="Change donation link configuration"
-                  >
-                    {showBmcConfig ? 'HIDE SETTINGS' : 'CONFIGURE LINK'}
-                  </button>
-                </div>
-
-                {showBmcConfig && (
-                  <div className="bg-[#0b0b0c] p-2.5 rounded border border-zinc-800 space-y-1.5 transition-all">
-                    <label className="text-[9px] text-zinc-400 font-mono uppercase block">Monobank (Base/Jar), Diaka, or Buy Me a Coffee Link:</label>
-                    <input 
-                      type="text" 
-                      value={bmcUsername}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setBmcUsername(val);
-                        localStorage.setItem('packcraft_bmc_user', val);
-                      }}
-                      placeholder="https://send.monobank.ua/jar/..."
-                      className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs rounded p-1.5 focus:border-yellow-500 focus:outline-none"
-                    />
-                    <p className="text-[8px] text-zinc-500 font-mono leading-normal pt-1">
-                      Supports direct URLs: <span className="text-yellow-600/90 break-all">base.monobank.ua/...</span>, <span className="text-yellow-600/90 break-all">send.monobank.ua/...</span>, <span className="text-yellow-600/90 break-all">diaka.ua/...</span> or simply a Buy Me a Coffee Username.
-                    </p>
-                  </div>
-                )}
-
-                <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
-                  This tool represents an example of rapid prototyping and deployment of modern AI technologies. You can support my future developments by buying me a coffee or sending a donation! ☕✨
-                </p>
-
-                <a
-                  href={
-                    bmcUsername.startsWith('http') 
-                      ? bmcUsername 
-                      : `https://www.buymeacoffee.com/${bmcUsername || 'juliiyabrodska'}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`w-full font-bold text-xs font-mono py-2.5 px-4 rounded flex items-center justify-center space-x-2 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] select-none focus:ring-1 ${
-                    bmcUsername.includes('mono') 
-                      ? 'bg-zinc-100 hover:bg-zinc-200 text-black shadow-[0_4px_12px_rgba(255,255,255,0.05)] focus:ring-zinc-400' 
-                      : 'bg-[#FFDD00] hover:bg-[#ffea45] text-black shadow-[0_4px_12px_rgba(255,221,0,0.15)] focus:ring-yellow-400'
-                  }`}
-                  id="btn-buy-me-coffee"
-                >
-                  <span className="text-sm">{bmcUsername.includes('mono') ? '💳' : '☕'}</span>
-                  <span className="font-extrabold uppercase">
-                    {bmcUsername.includes('mono') ? 'SUPPORT VIA MONOBANK' : 'BUY ME A COFFEE'}
-                  </span>
-                  <ExternalLink className="w-3 h-3 shrink-0 stroke-[2.5px]" />
-                </a>
-
-                {/* GRATITUDE NOTE FOR DONATORS */}
-                <div className="p-2.5 bg-zinc-950/40 rounded border border-zinc-800/60 text-[9.5px] text-zinc-400 font-sans leading-relaxed">
-                  <div className="flex items-center space-x-1.5 text-zinc-300 font-bold mb-1.5 uppercase tracking-wider font-mono">
-                    <Heart className="w-3 h-3 text-rose-500 animate-pulse shrink-0" />
-                    <span>Sincere Thanks to Supporters</span>
-                  </div>
-                  {bmcUsername.includes('mono') ? (
-                    <span>
-                      My sincere thanks to colleagues, partners, and visitors for supporting this project! Your contributions are a vital investment in developing open-source interactive solutions, Lean optimizations, and AI-driven workflows. Every donation inspires further development and the adoption of cutting-edge technologies.
-                    </span>
-                  ) : (
-                    <span>
-                      My sincere thanks for supporting the development of open-source solutions, Lean optimizations, and AI automations. Your involvement and support inspire the creation of new valuable tools for business process automation!
-                    </span>
-                  )}
-                </div>
-              </div>
-
               {/* BUSINESS & CUSTOM MODEL INQUIRY WIDGET */}
               <div className="mt-4 p-3 bg-gradient-to-br from-[#121214] to-[#121620] rounded-lg border border-indigo-500/20 space-y-3 shadow-md">
                 <div className="flex items-center justify-between">
