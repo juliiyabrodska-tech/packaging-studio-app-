@@ -99,7 +99,7 @@ const UnitCard: React.FC<UnitCardProps> = ({ shape, accent, name, index, gloss, 
             {productNoun} {String(index + 1).padStart(2, '0')}
           </div>
           <div className="flex-1 flex items-center justify-center py-1 relative z-10">
-            <div className={`rotate-90 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded border ${accent.labelBorder} whitespace-nowrap font-mono max-w-[90px] truncate text-center font-extrabold tracking-wide`}>
+            <div className={`rotate-90 bg-black/85 text-white text-[10px] px-2 py-1 rounded border-2 ${accent.border} whitespace-nowrap font-mono max-w-[110px] truncate text-center font-extrabold tracking-wider shadow-lg`}>
               {name || fallback}
             </div>
           </div>
@@ -304,7 +304,7 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
           </div>
 
           {/* Data-driven retail-unit assortment (shape + grid adapt to config) */}
-          <div className="relative w-full grid py-8 mt-4 z-10 transition-all duration-300" style={{ transform: 'translateZ(15px)', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: `${Math.max(1.5, 2.5 - cols * 0.3)}rem` }}>
+          <div className="relative w-full grid py-8 mt-4 z-10 transition-all duration-300" style={{ transform: 'translateZ(15px)', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: `${Math.max(0.8, 2.0 - cols * 0.25)}rem` }}>
             {names.map((name, i) => (
               <div key={`unit-${i}-${cols}x${rows}`} className="flex justify-center animate-in fade-in duration-500">
                 <UnitCard
@@ -320,6 +320,18 @@ export const CansAssortmentPreview: React.FC<PreviewProps> = ({ specs }) => {
                 />
               </div>
             ))}
+          </div>
+
+          {/* Assortment variant legend */}
+          <div className="w-full mt-6 px-4 py-3 bg-coke-dark/60 rounded border border-coke-border/50 text-center max-w-sm mx-auto">
+            <div className="text-[7px] text-coke-gray uppercase tracking-widest font-mono mb-2">Variant Assortment</div>
+            <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+              {names.map((name, i) => (
+                <div key={`var-${i}`} className={`font-mono font-semibold ${ACCENTS[i % 4].text} text-center`}>
+                  {name || `Unit ${i + 1}`}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Outer packaging sleeve cutaway line */}
