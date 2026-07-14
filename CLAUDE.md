@@ -64,46 +64,49 @@ Each archetype has:
 
 ### Key Components
 
-**`src/App.tsx` (main state holder, ~900 lines)**
+**`src/App.tsx` (main state holder, ~1350 lines)**
 - Central `PackagingSpecs` state and `setSpecs()` updates
 - Handlers: `updateSpec()`, `updateVariant()`, `handleGridChange()`, `handleIndustryChange()`, `handleArtworkUpload()`
 - Auto-dimension effect that computes L/W/H from grid + unit dims and writes back to state
-- 5 control panels:
-  - Panel I: Structure & Dimensions (industry, packaging type, carton dims)
-  - Panel II: Materials, Printing & Finishing (board, colors, coating)
-  - Panel III: Variants (grid layout selector + dynamic variant inputs)
-  - Panel IV: Optional components (reinforced base, finger holes, dividers, etc.)
-  - Panel V: Team sign-off checkboxes
+- 5 control panels (I-V): Structure, Materials, Variants (with grid selector), Options, Sign-off
 - White-label config panel (expandable, hidden if `hideSupport` is true)
 - Packaging artwork upload widget
+- Approval modal dialog with team sign-off checkboxes (Oleh, Serhiy, Maryna)
+- Removed: donation section ("Buy Me a Coffee") as it's not applicable in Ukraine
 
-**`src/components/CansAssortmentPreview.tsx` (3D preview, ~250 lines)**
-- Renders an interactive Three.js canvas showing the units in a grid
+**`src/components/CansAssortmentPreview.tsx` (3D preview, ~400 lines)**
+- Renders interactive canvas showing the units in a grid
 - Grid adapts to `gridCols × gridRows`; canvas renders `cols` columns of units
 - Each unit is a UnitCard component colored by accent (red, green, violet, gold, cycling)
-- Artwork (if provided) applies as a `backgroundImage` texture on each card
+- Artwork (if provided) applies as CSS `backgroundImage` texture on each card
+- Dynamic gap calculation: `gap: ${Math.max(1.5, 2.5 - cols * 0.3)}rem` (more gap for fewer columns to prevent overlapping)
+- Added `transition-all duration-300` on grid container for smooth layout changes
+- Added `animate-in fade-in duration-500` on each unit card for entrance animation
 - Labels include dynamic count (e.g., "4 × 0.5 L CANS"), pack config (e.g., "2×2 — 4-UNIT PACK")
 - Three 3D unit silhouettes: Box, Cylinder, Sphere (mapped to industry.unitShape)
 
-**`src/components/PackagingDielineSVG.tsx` (2D die-line, ~600 lines)**
+**`src/components/PackagingDielineSVG.tsx` (2D die-line, ~620 lines)**
 - Parametric SVG that adapts to `packagingType`
-- Each archetype has its own rendering branch:
-  - `closed_box_2x2`: Unfolded net with 4 side panels, base/lid flaps, glue seam
-  - `basket_handle`: Open tray outline with partitions and handle
-  - `sleeve_pack`: Wrap rectangle with registration marks
-  - `tube_carton`: Unrolled cylinder + two round end caps with seam/crease lines
-  - `pillow_pouch`: Rounded film panel with heat-seal strips and center fold
-- All include dimension labels, fold-line markups, and a unit-footprint grid showing where units sit
+- Each archetype has its own rendering branch with proper geometry
+- All include dimension labels, fold-line markups, and unit-footprint grid showing where units sit
 - Color scheme: black background (#1c1c1e), white grid lines, red cut lines, blue fold lines
 
-**`src/utils/pdfGenerator.ts` (PDF export, ~350 lines)**
+**`src/utils/pdfGenerator.ts` (PDF export, ~1130 lines)**
 - Generates a 2-page PDF using jsPDF
 - **Page 1**: BOM specs table + customer build info + sign-off status
   - Dynamic BOM includes structure type, material, dimensions, cost estimate
-  - Variant table (capped at 4 rows + a "+N more" note for large assortments)
+  - Variant table (capped at 4 rows + "+N more" note for large assortments)
 - **Page 2**: Parametric die-line SVG (reused from PackagingDielineSVG component)
 - **CSV export**: Row-by-row bill of materials with all variants iterated (no cap)
-- All terminology is dynamically pulled from `getIndustry()` so different industries export different labels
+- **Approval Form PDF**: `generateApprovalFormPDF()` with 7 sections:
+  1. Basic specifications (packaging type, dimensions, industry)
+  2. Materials & printing (stock, grammage, thickness, method, colors, coating)
+  3. Structural options (reinforced base, finger holes, dividers, moisture barrier, tear line)
+  4. Assortment breakdown (all unit variants)
+  5. Bill of materials & costs (area, weight, per-unit cost, batch cost)
+  6. Team approval status (Oleh, Serhiy, Maryna)
+  7. Authorized signatures with date fields
+- All terminology dynamically sourced from `getIndustry()` so different industries export different labels
 
 ### Design System
 
@@ -225,11 +228,24 @@ Two new packaging structures with their own parametric die-lines…
 
 ## Deployment
 
-**Vercel auto-deploy**: The app is hosted at https://juliiyabrodska-tech.github.io/packaging-studio-app-/ and automatically deploys when `main` is pushed.
+**GitHub Pages**: The app is hosted at https://juliiyabrodska-tech.github.io/packaging-studio-app-/
+
+**GitHub Actions Workflow**: `.github/workflows/deploy.yml` automatically builds and deploys to GitHub Pages when pushing to `main`.
+
+**Configuration Required**: Ensure GitHub repository Settings → Pages → Source is set to "GitHub Actions" (not "Deploy from a branch").
+
+The dist/ folder is gitignored (correct for build artifacts), and the workflow uploads it to GitHub Pages automatically.
+
+## Session-Specific Decisions
+
+- **Do not add the donation section** ("Buy Me a Coffee", "CONFIGURE LINK") — not applicable in Ukraine.
+- **Grid spacing fix**: Use responsive gap calculation `Math.max(1.5, 2.5 - cols * 0.3)rem` to prevent overlapping units when switching layouts.
+- **URL validation**: Wrap all external URL storage (e.g., LinkedIn contact link) in try-catch with URL constructor validation; only save if valid or empty (resets to default).
+- **Contact links**: Use actual functional channels (mailto, LinkedIn) not external donation platforms.
 
 ## Notes for Future Work
 
-- **Performance**: If 3D canvas lags with large artwork, consider lazy-loading images or compressing artwork before upload
-- **Localization**: The UI currently hard-codes English labels; adding i18n would require extracting all strings to a message catalog
-- **Testing**: No test suite exists yet; adding Jest + React Testing Library would improve refactoring safety
-- **Admin panel**: Currently no user account system; multi-user save/load would require a backend
+- **Performance**: If 3D canvas lags with large artwork, consider lazy-loading images or compressing before upload.
+- **Localization**: The UI currently hard-codes English labels; adding i18n would require extracting all strings to a message catalog.
+- **Testing**: No test suite exists yet; adding Jest + React Testing Library would improve refactoring safety.
+- **Admin panel**: Currently no user account system; multi-user save/load would require a backend.
