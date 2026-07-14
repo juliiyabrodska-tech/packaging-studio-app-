@@ -242,13 +242,7 @@ The dist/ folder is gitignored (correct for build artifacts), and the workflow u
 - **Grid spacing fix**: Use responsive gap calculation `Math.max(1.5, 2.5 - cols * 0.3)rem` to prevent overlapping units when switching layouts.
 - **URL validation**: Wrap all external URL storage (e.g., LinkedIn contact link) in try-catch with URL constructor validation; only save if valid or empty (resets to default).
 - **Contact links**: Use actual functional channels (mailto, LinkedIn) not external donation platforms.
-
-## Session-Specific Decisions
-
-- **Do not add the donation section** ("Buy Me a Coffee", "CONFIGURE LINK") — not applicable in Ukraine.
-- **Grid spacing fix**: Use responsive gap calculation `Math.max(1.5, 2.5 - cols * 0.3)rem` to prevent overlapping units when switching layouts.
-- **URL validation**: Wrap all external URL storage (e.g., LinkedIn contact link) in try-catch with URL constructor validation; only save if valid or empty (resets to default).
-- **Contact links**: Use actual functional channels (mailto, LinkedIn) not external donation platforms.
+- **PDF Layout Improvements**: All die-line drawings have bounds checking to prevent large black fields; automatic page breaks prevent text overlapping on page 1.
 
 ## Notes for Future Work
 
