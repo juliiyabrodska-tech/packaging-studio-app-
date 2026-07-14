@@ -414,7 +414,14 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
 
   // Section 4: Structural Extras list & Notes
   currentY = tableY + (flavorData.length * 5.5) + 6;
-  
+
+  // Check if we need a page break before extras section
+  if (currentY > 200) {
+    doc.addPage();
+    drawPageBorder(1); // Add border to new page
+    currentY = 20;
+  }
+
   // Left half: Extras. Right half: Notes
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(10);
@@ -427,60 +434,124 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.setFont('Helvetica', 'normal');
 
   let extraY = currentY + 4;
+  const extrasHeight = 20; // 5 extras × 4 spacing
+
   doc.text(`- Double-Reinforced Bottom: [${reinforcedBottom ? 'YES' : 'NO'}]`, 14, extraY);
   doc.text(`- Integrated Finger Grab Holes: [${fingerHoles ? 'YES' : 'NO'}]`, 14, extraY + 4);
   doc.text(`- Sound-Proof Taste Dividers: [${flavorDividers ? 'YES' : 'NO'}]`, 14, extraY + 8);
   doc.text(`- Dry MoistureBarrier Coat: [${moistureBarrier ? 'YES' : 'NO'}]`, 14, extraY + 12);
   doc.text(`- Easy-Tear Opening Perforations: [${tearPerforation ? 'YES' : 'NO'}]`, 14, extraY + 16);
 
-  // Notes block wrapping
-  const splitNotes = doc.splitTextToSize(cleanCyrillic(notes) || 'No custom annotations supplied for this revision block.', 84);
+  // Notes block wrapping (max width 82mm for right column)
+  const splitNotes = doc.splitTextToSize(cleanCyrillic(notes) || 'No custom annotations supplied for this revision block.', 80);
   doc.text(splitNotes, 110, currentY + 4);
+
+  // Calculate height after extras/notes
+  currentY = extraY + 20 + 4;
 
   // Plain demo notice directly above manufacturing block
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(120, 120, 120);
+
+  // Ensure demo notice has space
+  if (currentY > 220) {
+    doc.addPage();
+    drawPageBorder(1);
+    currentY = 20;
+  }
+
   doc.text(
     'This is a demo-generated document for portfolio/demonstration purposes only. No real approval, contract, or manufacturing agreement exists.',
     12,
-    238
+    currentY + 8
   );
 
   // Bottom Contractor Sign-Off Area
-  const signY = 242;
-  doc.setLineWidth(0.3);
-  doc.setDrawColor(120, 120, 120);
-  doc.setFillColor(252, 252, 254);
-  doc.rect(12, signY, 186, 32, 'FD');
+  const signY = currentY + 12;
 
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(28, 28, 30);
-  doc.text('MANUFACTURING AGREEMENT & CONSENT (TEAM & CONTRACTOR SIGN-OFF BOARD)', 15, signY + 4.5);
+  // Check if sign-off area fits on current page
+  if (signY + 35 > 280) {
+    doc.addPage();
+    drawPageBorder(1);
+    doc.setFillColor(28, 28, 30);
+    doc.rect(12, 12, 186, 12, 'F');
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text('TEAM & CONTRACTOR SIGN-OFF BOARD (CONTINUED)', 16, 19.5);
 
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text('This document stands as the finalized CAD sign-off sheet. The contractor warrants that all die-cutting tolerances align with standard ISO templates.', 15, signY + 9);
+    // Redraw sign-off box on new page
+    let newSignY = 30;
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(120, 120, 120);
+    doc.setFillColor(252, 252, 254);
+    doc.rect(12, newSignY, 186, 35, 'FD');
 
-  // Real Team signatures mock signoff status representation
-  doc.setFont('Helvetica', 'bold');
-  doc.text(`BOM MANAGER APPROVAL: APPROVED`, 15, signY + 15);
-  doc.text(`FINANCE LEAD APPROVAL: APPROVED`, 70, signY + 15);
-  doc.text(`MARKETING LEAD APPROVAL: APPROVED`, 130, signY + 15);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(28, 28, 30);
+    doc.text('MANUFACTURING AGREEMENT & CONSENT', 15, newSignY + 4.5);
 
-  doc.setDrawColor(200, 200, 200);
-  doc.line(15, signY + 17, 195, signY + 17);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(80, 80, 80);
+    doc.text('This document stands as the finalized CAD sign-off sheet.', 15, newSignY + 9);
 
-  // Empty contractor signature container
-  doc.setFont('Helvetica', 'bold');
-  doc.text('CONTRACTOR REPRESENTATIVE / PRINT FACTORY REPRESENTATIVE SIGNATURE:', 15, signY + 21);
-  
-  doc.setFont('Helvetica', 'normal');
-  doc.text('Signature: __________________________________', 15, signY + 26);
-  doc.text('Full Name / Name: _____________________________________', 90, signY + 26);
-  doc.text('Date / Date: ____ / ____ / 2026                 L.S. / stamp', 15, signY + 30);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(28, 28, 30);
+    doc.text(`BOM MANAGER: APPROVED`, 15, newSignY + 15);
+    doc.text(`FINANCE LEAD: APPROVED`, 70, newSignY + 15);
+    doc.text(`MARKETING LEAD: APPROVED`, 130, newSignY + 15);
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, newSignY + 17.5, 195, newSignY + 17.5);
+
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.text('CONTRACTOR SIGNATURE:', 15, newSignY + 22);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('Signature: ____________________________     Date: ____ / ____ / 2026', 15, newSignY + 27);
+  } else {
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(120, 120, 120);
+    doc.setFillColor(252, 252, 254);
+    doc.rect(12, signY, 186, 32, 'FD');
+
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(28, 28, 30);
+    doc.text('MANUFACTURING AGREEMENT & CONSENT (TEAM & CONTRACTOR SIGN-OFF BOARD)', 15, signY + 4.5);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(80, 80, 80);
+    doc.text('This document stands as the finalized CAD sign-off sheet. The contractor warrants that all die-cutting tolerances align with standard ISO templates.', 15, signY + 9);
+
+    // Real Team signatures mock signoff status representation
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(`BOM MANAGER APPROVAL: APPROVED`, 15, signY + 15);
+    doc.text(`FINANCE LEAD APPROVAL: APPROVED`, 70, signY + 15);
+    doc.text(`MARKETING LEAD APPROVAL: APPROVED`, 130, signY + 15);
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, signY + 17, 195, signY + 17);
+
+    // Empty contractor signature container
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text('CONTRACTOR REPRESENTATIVE / PRINT FACTORY REPRESENTATIVE SIGNATURE:', 15, signY + 21);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('Signature: __________________________________', 15, signY + 26);
+    doc.text('Full Name / Name: _____________________________________', 90, signY + 26);
+    doc.text('Date / Date: ____ / ____ / 2026                 L.S. / stamp', 15, signY + 30);
+  }
 
   // ==========================================
   // PAGE 2: TECHNICAL CAD SHEETS (DIE-LINE VECTORS)
@@ -488,46 +559,52 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   doc.addPage();
   drawPageBorder(2);
 
-  // Page 2 header
-  doc.setFillColor(28, 28, 30);
-  doc.rect(12, 12, 186, 12, 'F');
+  // Page 2 header (smaller, cleaner)
+  doc.setFillColor(230, 28, 36);
+  doc.rect(12, 12, 186, 10, 'F');
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
-  doc.text('CAD SCHEMATIC SHEET 02 - TECHNICAL UNTRANSPOSED DIE FOLD-KINK SHEET', 16, 19.5);
+  doc.text('CAD SCHEMATIC SHEET — TECHNICAL DIE-LINE DRAWING', 16, 18);
+
+  // Title of what's being shown
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(50, 50, 50);
+  doc.text(`Packaging Type: ${formatType(packagingType)} | Scale: 1:2.8 | Units: CM`, 16, 24);
 
   // Scale, margins, boxes for the vector representation in our PDF
   // We will programmatically draw the technical blueprint of the selected packaging type!
   const canvasWidthMm = 170;
-  const canvasHeightMm = 150;
+  const canvasHeightMm = 140;
   const cxMm = 105;
-  const cyMm = 110;
+  const cyMm = 100;
 
   // Let's print the specific fold layout in native sharp PDF vectors!
   doc.setDrawColor(230, 28, 36); // Red for cutting lines
   doc.setLineWidth(0.4);
 
-  // Draw CAD background engineering grid overlay
-  doc.setDrawColor(240, 240, 240);
-  doc.setLineWidth(0.1);
+  // Draw CAD background engineering grid overlay (light gray, thin)
+  doc.setDrawColor(245, 245, 245);
+  doc.setLineWidth(0.05);
   for (let x = 15; x <= 195; x += 10) {
-    doc.line(x, 30, x, 230);
+    doc.line(x, 28, x, 220);
   }
-  for (let y = 30; y <= 230; y += 10) {
+  for (let y = 28; y <= 220; y += 10) {
     doc.line(15, y, 195, y);
   }
 
   // Draw technical layout according to type
   if (packagingType === 'closed_box_2x2') {
     // 4 vertical panels plus 1 glue flap
-    const canDiaMm = canDiameter * 3.5; // Scaled to fit perfectly
-    const canHeiMm = canHeight * 3.5;
-    const lMm = cartonLength * 3.5;
-    const wMm = cartonWidth * 3.5;
-    const gMm = 1.6 * 3.5; // Glue tab
+    const canDiaMm = canDiameter * 3.2; // Scaled to fit
+    const canHeiMm = canHeight * 3.2;
+    const lMm = cartonLength * 3.2;
+    const wMm = cartonWidth * 3.2;
+    const gMm = 1.6 * 3.2; // Glue tab
 
     const totalWidth = gMm + lMm * 2 + wMm * 2;
-    const startXMm = cxMm - totalWidth / 2;
+    const startXMm = Math.max(20, cxMm - totalWidth / 2);
     const startYMm = cyMm - canHeiMm / 2;
 
     const x0 = startXMm;
@@ -537,11 +614,11 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     const x4 = x3 + lMm;
     const xEnd = x4 + wMm;
 
-    const yTop = startYMm;
-    const yBot = startYMm + canHeiMm;
+    const yTop = Math.max(30, startYMm);
+    const yBot = Math.min(200, startYMm + canHeiMm);
     const flapMm = wMm * 0.7; // closure flaps
 
-    // Outer cuts in blood solid Red line (різ)
+    // Outer cuts in red line (різ)
     doc.setDrawColor(230, 28, 36);
     doc.setLineWidth(0.4);
     
@@ -579,24 +656,31 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
 
   } else if (packagingType === 'basket_handle') {
     // Open carrier design with central partition handle
-    const lMm = cartonLength * 4;
-    const wMm = cartonWidth * 4;
-    const hMm = cartonHeight * 4;
-    
-    const bx = cxMm;
+    const lMm = cartonLength * 3.5;
+    const wMm = cartonWidth * 3.5;
+    const hMm = cartonHeight * 3.5;
+
+    const bx = Math.min(110, Math.max(50, cxMm));
     const by = cyMm;
 
     doc.setDrawColor(230, 28, 36);
     doc.setLineWidth(0.4);
 
-    // Center handle partition outer board
-    doc.rect(bx - lMm/2, by - hMm * 0.9, lMm, hMm * 1.5);
+    // Center handle partition outer board (with bounds)
+    const handleX = Math.max(20, bx - lMm/2);
+    const handleY = Math.max(30, by - hMm * 0.9);
+    const handleW = Math.min(175 - handleX, lMm);
+    const handleH = Math.min(190 - handleY, hMm * 1.5);
+
+    doc.rect(handleX, handleY, handleW, handleH);
     // Finger loop cutout
-    doc.rect(bx - 12, by - hMm * 0.6, 24, 6, 'S');
+    if (handleW > 24) {
+      doc.rect(bx - 12, by - hMm * 0.6, 24, 6, 'S');
+    }
 
     // Bottom plate panels folding sideways
-    doc.rect(bx - lMm/2, by - hMm * 0.9 + hMm * 1.5, lMm, wMm/2);
-    doc.rect(bx - lMm/2, by - hMm * 0.9 - wMm/2, lMm, wMm/2);
+    doc.rect(handleX, handleY + handleH, handleW, Math.min(30, wMm/2));
+    doc.rect(handleX, handleY - Math.min(30, wMm/2), handleW, Math.min(30, wMm/2));
 
     // dashed centerfolds
     doc.setDrawColor(100, 100, 100);
@@ -607,15 +691,15 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
   } else if (packagingType === 'tube_carton') {
     // Cylindrical tube: unrolled wall rectangle + two round end caps
     const circumference = Math.PI * cartonLength;
-    const bodyW = Math.min(150, circumference * 3);
-    const hMm = Math.min(120, cartonHeight * 4);
-    const capR = Math.min(22, (cartonLength * 3) / 2);
-    const sx = cxMm - bodyW / 2;
-    const sy = cyMm - hMm / 2;
+    const bodyW = Math.min(140, circumference * 2.8);
+    const hMm = Math.min(110, cartonHeight * 3.5);
+    const capR = Math.min(20, (cartonLength * 2.8) / 2);
+    const sx = Math.max(20, cxMm - bodyW / 2);
+    const sy = Math.max(35, cyMm - hMm / 2);
 
     doc.setDrawColor(230, 28, 36);
     doc.setLineWidth(0.4);
-    doc.rect(sx, sy, bodyW, hMm);
+    doc.rect(sx, sy, Math.min(175 - sx, bodyW), Math.min(190 - sy, hMm));
 
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.2);
@@ -629,19 +713,19 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     doc.circle(sx + bodyW * 0.72, sy + hMm + capR + 3, capR);
   } else if (packagingType === 'pillow_pouch') {
     // Pillow pouch: rounded film panel with top & bottom heat-seal strips
-    const wMm = Math.min(150, cartonLength * 5);
-    const hMm = Math.min(150, cartonHeight * 4);
-    const sx = cxMm - wMm / 2;
-    const sy = cyMm - hMm / 2;
-    const seal = Math.min(8, hMm * 0.14);
+    const wMm = Math.min(130, cartonLength * 4);
+    const hMm = Math.min(130, cartonHeight * 3.5);
+    const sx = Math.max(25, cxMm - wMm / 2);
+    const sy = Math.max(40, cyMm - hMm / 2);
+    const seal = Math.min(7, hMm * 0.12);
 
     doc.setDrawColor(230, 28, 36);
     doc.setLineWidth(0.4);
-    doc.roundedRect(sx, sy, wMm, hMm, 3, 3);
+    doc.roundedRect(sx, sy, Math.min(170 - sx, wMm), Math.min(185 - sy, hMm), 3, 3);
 
     doc.setFillColor(245, 220, 222);
-    doc.rect(sx, sy, wMm, seal, 'F');
-    doc.rect(sx, sy + hMm - seal, wMm, seal, 'F');
+    doc.rect(sx, sy, Math.min(170 - sx, wMm), seal, 'F');
+    doc.rect(sx, Math.min(sy + hMm - seal, 185 - seal), Math.min(170 - sx, wMm), seal, 'F');
 
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.2);
@@ -650,34 +734,41 @@ export const generateSpecsPDFChecklist = (specs: PackagingSpecs) => {
     doc.setLineDashPattern([], 0);
   } else {
     // Sleeve pack template
-    const lMm = cartonLength * 4;
-    const wMm = cartonWidth * 4;
-    const hMm = cartonHeight * 4;
+    const lMm = cartonLength * 3.2;
+    const wMm = cartonWidth * 3.2;
+    const hMm = cartonHeight * 3.2;
 
-    const totalW = lMm * 2 + hMm * 2 + 10;
-    const sx = cxMm - totalW / 2;
-    const sy = cyMm - wMm / 2;
+    const totalW = Math.min(140, lMm * 2 + hMm * 2 + 8);
+    const sx = Math.max(20, cxMm - totalW / 2);
+    const sy = Math.max(40, cyMm - wMm / 2);
 
     doc.setDrawColor(230, 28, 36);
     doc.setLineWidth(0.4);
 
-    // Outer rectangle strip
-    doc.rect(sx, sy, totalW, wMm);
+    // Outer rectangle strip (bounded)
+    doc.rect(sx, sy, Math.min(175 - sx, totalW), Math.min(180 - sy, wMm));
 
     // Folds
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.2);
     doc.setLineDashPattern([1.5, 1], 0);
-    doc.line(sx + 10, sy, sx + 10, sy + wMm);
-    doc.line(sx + 10 + lMm, sy, sx + 10 + lMm, sy + wMm);
-    doc.line(sx + 10 + lMm + hMm, sy, sx + 10 + lMm + hMm, sy + wMm);
-    doc.line(sx + 10 + lMm * 2 + hMm, sy, sx + 10 + lMm * 2 + hMm, sy + wMm);
 
-    if (fingerHoles) {
+    const fold1 = sx + 8;
+    const fold2 = sx + 8 + lMm;
+    const fold3 = sx + 8 + lMm + hMm;
+    const fold4 = sx + 8 + lMm * 2 + hMm;
+    const foldEnd = sy + Math.min(180 - sy, wMm);
+
+    if (fold1 > sx && fold1 < 195) doc.line(fold1, sy, fold1, foldEnd);
+    if (fold2 > sx && fold2 < 195) doc.line(fold2, sy, fold2, foldEnd);
+    if (fold3 > sx && fold3 < 195) doc.line(fold3, sy, fold3, foldEnd);
+    if (fold4 > sx && fold4 < 195) doc.line(fold4, sy, fold4, foldEnd);
+
+    if (fingerHoles && fold2 > sx && fold2 < 195) {
       doc.setDrawColor(230, 28, 36);
       doc.setLineDashPattern([], 0);
-      doc.circle(sx + 10 + lMm + hMm / 3, sy + wMm / 2, 5);
-      doc.circle(sx + 10 + lMm + (2 * hMm) / 3, sy + wMm / 2, 5);
+      doc.circle(fold2 + hMm / 3, sy + Math.min(180 - sy, wMm) / 2, 4);
+      doc.circle(fold2 + (2 * hMm) / 3, sy + Math.min(180 - sy, wMm) / 2, 4);
     }
   }
 
