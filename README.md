@@ -4,6 +4,10 @@
 
 Packaging projects usually stall between marketing, the print house and production: specs live in email threads, die-lines are redrawn by hand, and nobody is sure which version was approved. This app keeps the whole spec in one place and produces the documents each side needs.
 
+## Screenshot
+
+![PackCraft Studio — 2D die-line view with structure, materials and flavor variant panels](screenshots/app-overview.png)
+
 ## What it does
 
 - **Configure the pack:** 5 structures (2×2 carton, basket with handle, sleeve, tube carton, pillow pouch), board and material, print method, ink count, coating, and options such as dividers, finger holes or tear strip.
